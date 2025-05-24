@@ -139,4 +139,70 @@
       document.getElementById('modal-title').value = data.title;
       document.getElementById('modal-desc').value = data.desc;
       document.getElementById('modal-priority').value = data.priority;
-      document.getElem
+      document.getElementById('modal-deadline').value = data.deadline;
+      document.getElementById('modal-responsible').value = data.responsible;
+
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+      editingTask = null;
+    }
+
+    function saveTaskChanges() {
+      const data = {
+        id: editingTask.id,
+        title: document.getElementById('modal-title').value,
+        desc: document.getElementById('modal-desc').value,
+        priority: document.getElementById('modal-priority').value,
+        deadline: document.getElementById('modal-deadline').value,
+        responsible: document.getElementById('modal-responsible').value
+      };
+
+      editingTask.dataset.info = JSON.stringify(data);
+      editingTask.innerHTML = `
+        <div class="font-semibold">${data.title}</div>
+        <div class="text-sm text-gray-600">${data.priority} ${data.deadline ? ' - ' + data.deadline : ''}</div>
+        <div class="text-xs text-gray-500">${data.responsible || ''}</div>
+      `;
+      closeModal();
+      saveBoard();
+    }
+
+    function saveBoard() {
+      const columns = ['todo', 'in-progress', 'done'];
+      const data = {};
+
+      columns.forEach(col => {
+        const ul = document.getElementById(col);
+        const tasks = [];
+        ul.querySelectorAll('li').forEach(task => {
+          tasks.push(JSON.parse(task.dataset.info));
+        });
+        data[col] = tasks;
+      });
+
+      localStorage.setItem('kanbanBoard', JSON.stringify(data));
+    }
+
+    function loadBoard() {
+      const saved = localStorage.getItem('kanbanBoard');
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      const columns = ['todo', 'in-progress', 'done'];
+
+      columns.forEach(col => {
+        const ul = document.getElementById(col);
+        ul.innerHTML = '';
+        data[col].forEach(taskData => {
+          const task = createTaskElement(taskData);
+          ul.appendChild(task);
+        });
+      });
+    }
+
+    window.onload = loadBoard;
+  </script>
+</body>
+</html>
