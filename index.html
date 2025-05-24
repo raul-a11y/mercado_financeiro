@@ -204,6 +204,8 @@
     // Drag and drop functions
     function dragStart(event) {
       draggedTaskId = event.target.dataset.id;
+      event.dataTransfer.setData('text/plain', draggedTaskId);
+      event.dataTransfer.effectAllowed = "move";
       event.target.classList.add('dragging');
     }
 
@@ -214,14 +216,17 @@
 
     function allowDrop(event) {
       event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
     }
 
     function drop(event) {
       event.preventDefault();
       const columnId = event.currentTarget.id;
-      if (!draggedTaskId) return;
 
-      const task = tasks.find(t => t.id == draggedTaskId);
+      const taskId = event.dataTransfer.getData('text/plain');
+      if (!taskId) return;
+
+      const task = tasks.find(t => t.id == taskId);
       if (task) {
         task.status = columnId;
         saveTasks();
@@ -280,21 +285,16 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const importedTasks = JSON.parse(e.target.result);
-          if (Array.isArray(importedTasks)) {
-            tasks = importedTasks;
-            saveTasks();
-          } else {
-            alert('Arquivo JSON inválido.');
-          }
-        } catch {
-          alert('Erro ao ler o arquivo JSON.');
+          tasks = JSON.parse(e.target.result);
+          saveTasks();
+        } catch (error) {
+          alert('Arquivo JSON inválido.');
         }
       };
       reader.readAsText(file);
     }
 
-    // Inicializa a renderização
+    // Inicializa
     renderTasks();
     updateMetrics();
   </script>
