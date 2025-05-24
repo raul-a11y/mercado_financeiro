@@ -2,9 +2,9 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kanban Dinâmico - FinancePro</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
     .dragging {
       opacity: 0.5;
@@ -27,7 +27,7 @@
       </ul>
     </nav>
     <button onclick="exportTasks()" class="mt-4 bg-green-500 text-white px-4 py-2 rounded">Exportar JSON</button>
-    <input type="file" id="importFile" class="hidden" onchange="importTasks(event)">
+    <input type="file" id="importFile" class="hidden" onchange="importTasks(event)" />
     <button onclick="document.getElementById('importFile').click()" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">Importar JSON</button>
   </aside>
 
@@ -37,16 +37,17 @@
 
     <!-- Filtros -->
     <div class="mb-4 flex flex-wrap gap-4">
-      <input id="filter-title" type="text" placeholder="Filtrar por título..." class="p-2 border rounded" oninput="applyFilters()">
+      <input id="filter-title" type="text" placeholder="Filtrar por título..." class="p-2 border rounded" oninput="applyFilters()" />
       <select id="filter-priority" class="p-2 border rounded" onchange="applyFilters()">
         <option value="">Todas as prioridades</option>
         <option value="Baixa">Baixa</option>
         <option value="Média">Média</option>
         <option value="Alta">Alta</option>
       </select>
-      <input id="filter-responsible" type="text" placeholder="Filtrar por responsável..." class="p-2 border rounded" oninput="applyFilters()">
+      <input id="filter-responsible" type="text" placeholder="Filtrar por responsável..." class="p-2 border rounded" oninput="applyFilters()" />
     </div>
 
+    <!-- Nova Tarefa -->
     <div class="mb-4 flex gap-2">
       <input id="new-task" type="text" placeholder="Título da nova tarefa..." class="flex-1 p-2 border rounded" />
       <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded">Adicionar</button>
@@ -105,22 +106,199 @@
   </main>
 
   <script>
-    // ...código JS existente...
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();
+      updateMetrics();
+    }
+
+    function renderTasks() {
+      const columns = {
+        todo: document.getElementById('todo'),
+        'in-progress': document.getElementById('in-progress'),
+        done: document.getElementById('done')
+      };
+
+      Object.values(columns).forEach(col => col.innerHTML = '');
+
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.textContent = task.title;
+        li.draggable = true;
+        li.dataset.id = task.id;
+        li.dataset.info = JSON.stringify(task);
+        li.className = 'p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300';
+
+        // Evento abrir modal para editar tarefa
+        li.addEventListener('click', () => openModal(task.id));
+
+        // Drag and drop events
+        li.addEventListener('dragstart', dragStart);
+        li.addEventListener('dragend', dragEnd);
+
+        columns[task.status].appendChild(li);
+      });
+
+      applyFilters();
+    }
+
+    function addTask() {
+      const input = document.getElementById('new-task');
+      const title = input.value.trim();
+      if (!title) {
+        alert('Por favor, insira o título da tarefa.');
+        return;
+      }
+
+      const newTask = {
+        id: Date.now(),
+        title: title,
+        description: '',
+        priority: 'Média',
+        deadline: '',
+        responsible: '',
+        status: 'todo'
+      };
+
+      tasks.push(newTask);
+      saveTasks();
+      input.value = '';
+    }
+
+    function openModal(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      document.getElementById('modal-title').value = task.title;
+      document.getElementById('modal-desc').value = task.description;
+      document.getElementById('modal-priority').value = task.priority;
+      document.getElementById('modal-deadline').value = task.deadline;
+      document.getElementById('modal-responsible').value = task.responsible;
+
+      document.getElementById('modal').dataset.currentId = id;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    function saveTaskChanges() {
+      const id = Number(document.getElementById('modal').dataset.currentId);
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      task.title = document.getElementById('modal-title').value.trim();
+      task.description = document.getElementById('modal-desc').value.trim();
+      task.priority = document.getElementById('modal-priority').value;
+      task.deadline = document.getElementById('modal-deadline').value;
+      task.responsible = document.getElementById('modal-responsible').value.trim();
+
+      saveTasks();
+      closeModal();
+    }
+
+    // Drag and drop functions
+    let draggedTaskId = null;
+
+    function dragStart(event) {
+      draggedTaskId = event.target.dataset.id;
+      event.target.classList.add('dragging');
+    }
+
+    function dragEnd(event) {
+      event.target.classList.remove('dragging');
+      draggedTaskId = null;
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      const columnId = event.currentTarget.id;
+      if (!draggedTaskId) return;
+
+      const task = tasks.find(t => t.id == draggedTaskId);
+      if (task) {
+        task.status = columnId;
+        saveTasks();
+      }
+    }
+
+    // Filtros
     function applyFilters() {
       const title = document.getElementById('filter-title').value.toLowerCase();
       const priority = document.getElementById('filter-priority').value;
       const responsible = document.getElementById('filter-responsible').value.toLowerCase();
+
       ['todo', 'in-progress', 'done'].forEach(col => {
-        document.getElementById(col).querySelectorAll('li').forEach(task => {
-          const data = JSON.parse(task.dataset.info);
+        document.getElementById(col).querySelectorAll('li').forEach(taskLi => {
+          const data = JSON.parse(taskLi.dataset.info);
           const matchTitle = data.title.toLowerCase().includes(title);
           const matchPriority = !priority || data.priority === priority;
           const matchResponsible = data.responsible.toLowerCase().includes(responsible);
-          task.style.display = (matchTitle && matchPriority && matchResponsible) ? '' : 'none';
+          taskLi.style.display = (matchTitle && matchPriority && matchResponsible) ? '' : 'none';
         });
       });
     }
+
+    // Métricas básicas
+    function updateMetrics() {
+      const total = tasks.length;
+      const todoCount = tasks.filter(t => t.status === 'todo').length;
+      const inProgressCount = tasks.filter(t => t.status === 'in-progress').length;
+      const doneCount = tasks.filter(t => t.status === 'done').length;
+
+      const metricsDiv = document.getElementById('metrics');
+      metricsDiv.innerHTML = `
+        Total de tarefas: ${total} <br />
+        A Fazer: ${todoCount} <br />
+        Em Progresso: ${inProgressCount} <br />
+        Concluído: ${doneCount}
+      `;
+    }
+
+    // Exportar JSON
+    function exportTasks() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "tasks.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
+
+    // Importar JSON
+    function importTasks(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedTasks = JSON.parse(e.target.result);
+          if (Array.isArray(importedTasks)) {
+            tasks = importedTasks;
+            saveTasks();
+          } else {
+            alert('Arquivo JSON inválido.');
+          }
+        } catch {
+          alert('Erro ao ler o arquivo JSON.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Resetar input
+    }
+
+    // Inicializa a tela
+    renderTasks();
+    updateMetrics();
   </script>
 </body>
 </html>
