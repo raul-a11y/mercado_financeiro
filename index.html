@@ -107,6 +107,7 @@
 
   <script>
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let draggedTaskId = null;
 
     function saveTasks() {
       localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -131,7 +132,7 @@
         li.dataset.info = JSON.stringify(task);
         li.className = 'p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300';
 
-        // Evento abrir modal para editar tarefa
+        // Abrir modal para editar tarefa ao clicar
         li.addEventListener('click', () => openModal(task.id));
 
         // Drag and drop events
@@ -201,8 +202,6 @@
     }
 
     // Drag and drop functions
-    let draggedTaskId = null;
-
     function dragStart(event) {
       draggedTaskId = event.target.dataset.id;
       event.target.classList.add('dragging');
@@ -293,10 +292,9 @@
         }
       };
       reader.readAsText(file);
-      event.target.value = ''; // Resetar input
     }
 
-    // Inicializa a tela
+    // Inicializa a renderização
     renderTasks();
     updateMetrics();
   </script>
