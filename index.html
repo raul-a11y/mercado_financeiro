@@ -1,599 +1,589 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kanban Dinâmico com Sidebar - Mercado Financeiro</title>
-  <style>
-    /* Reset e básico */
-    body, html {
-      margin: 0; padding: 0; height: 100%;
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
-      display: flex;
-      min-height: 100vh;
-      overflow: hidden;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plataforma Financeira - Kanban</title>
+<style>
+  /* Reset básico e corpo */
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    background: #f5f5f5;
+  }
 
-    /* Sidebar lateral fixa */
-    #sidebar {
-      width: 220px;
-      background: #1e293b;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      box-sizing: border-box;
-      user-select: none;
-    }
-    #sidebar h2 {
-      margin: 0 0 1rem 0;
-      font-weight: 700;
-      font-size: 1.3rem;
-      text-align: center;
-    }
-    #sidebar nav a {
-      color: #cbd5e1;
-      text-decoration: none;
-      padding: 0.6rem 1rem;
-      border-radius: 4px;
-      margin-bottom: 0.5rem;
-      display: block;
-      transition: background-color 0.3s;
-    }
-    #sidebar nav a:hover, #sidebar nav a.active {
-      background-color: #3b82f6;
-      color: white;
-    }
-    #sidebar nav a:focus {
-      outline: 2px solid #3b82f6;
-      outline-offset: 2px;
-    }
+  /* Sidebar lateral */
+  #sidebar {
+    width: 220px;
+    background-color: #2c3e50;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+  }
 
-    /* Container principal (kanban + filtros) */
-    #main-content {
-      flex-grow: 1;
-      padding: 1rem 1.5rem;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-sizing: border-box;
-    }
+  #sidebar h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
 
-    /* Botão adicionar coluna */
-    #add-column-btn {
-      background-color: #22c55e;
-      border: none;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      font-weight: bold;
-      width: max-content;
-      cursor: pointer;
-      align-self: flex-start;
-    }
+  #sidebar nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    display: block;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+  }
 
-    /* Filtros */
-    #filters {
-      display: flex;
-      gap: 0.7rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-    #filters input, #filters select {
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 0.9rem;
-      min-width: 140px;
-    }
+  #sidebar nav a:hover,
+  #sidebar nav a.active {
+    background-color: #34495e;
+  }
 
-    /* Container e grid kanban */
-    #columns-container {
-      display: grid;
-      gap: 1rem;
-      grid-auto-flow: column;
-      overflow-x: auto;
-      padding-bottom: 0.5rem;
-    }
+  /* Conteúdo principal */
+  main {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
 
-    /* Coluna */
-    .column {
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      min-width: 280px;
-      max-height: 75vh;
-    }
+  /* Filtros */
+  #filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
 
-    /* Cabeçalho editável */
-    .column-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-    .column-header input[type="text"] {
-      font-weight: 600;
-      font-size: 1.1rem;
-      border: none;
-      border-bottom: 2px solid transparent;
-      outline: none;
-      width: 100%;
-      background: transparent;
-      transition: border-color 0.3s;
-    }
-    .column-header input[type="text"]:focus {
-      border-color: #3b82f6;
-    }
-    .remove-column-btn {
-      background: transparent;
-      border: none;
-      color: #ef4444;
-      font-weight: bold;
-      font-size: 1.3rem;
-      cursor: pointer;
-      padding: 0 5px;
-      user-select: none;
-    }
+  #filters input[type="text"],
+  #filters select {
+    padding: 0.5rem;
+    font-size: 1rem;
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
 
-    /* Lista tarefas */
-    ul.task-list {
-      flex-grow: 1;
-      overflow-y: auto;
-      min-height: 150px;
-      padding-left: 0;
-      margin: 0;
-      list-style: none;
-    }
-    ul.task-list li {
-      background: #e5e7eb;
-      padding: 0.6rem 1rem;
-      margin: 0.5rem 0;
-      border-radius: 4px;
-      cursor: pointer;
-      user-select: none;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    ul.task-list li.dragging {
-      opacity: 0.6;
-    }
+  /* Container das colunas do kanban */
+  #columns-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;  /* Espaçamento entre colunas e linhas */
+    padding: 1rem 0;
+    overflow-x: auto;
+  }
 
-    /* Botão adicionar tarefa */
-    .column > button {
-      margin-top: 0.5rem;
-      background-color: #2563eb;
-      border: none;
-      color: white;
-      padding: 0.5rem;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
-      width: 100%;
-    }
-    .column > button:hover {
-      background-color: #1d4ed8;
-    }
+  /* Cada coluna */
+  .column {
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+  }
 
-    /* Modal */
-    #modal-bg {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 20;
-    }
-    #modal {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      width: 320px;
-      max-width: 90vw;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    #modal label {
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-    #modal input, #modal select, #modal textarea {
-      width: 100%;
-      padding: 0.4rem 0.6rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      box-sizing: border-box;
-    }
-    #modal-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-    }
-    #modal-buttons button {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #modal-save {
-      background-color: #3b82f6;
-      color: white;
-    }
-    #modal-cancel {
-      background-color: #ef4444;
-      color: white;
-    }
+  /* Header da coluna com input para editar nome */
+  .column-header {
+    background-color: #2980b9;
+    padding: 0.5rem;
+    color: white;
+    font-weight: bold;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-    /* Métricas */
-    #metrics {
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin-top: 1rem;
-      color: #334155;
-    }
+  .column-header input[type="text"] {
+    flex: 1;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border: none;
+    background: transparent;
+    color: white;
+    cursor: text;
+  }
 
-    /* Scrollbar para colunas */
-    #columns-container::-webkit-scrollbar {
-      height: 8px;
-    }
-    #columns-container::-webkit-scrollbar-thumb {
-      background: #94a3b8;
-      border-radius: 4px;
-    }
-    #columns-container::-webkit-scrollbar-track {
-      background: #e2e8f0;
-    }
+  .column-header input[type="text"]:focus {
+    outline: 2px solid #fff;
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+  }
 
-    /* Responsividade */
-    @media (max-width: 768px) {
-      #sidebar {
-        width: 60px;
-        padding: 0.5rem;
-      }
-      #sidebar h2 {
-        font-size: 0;
-      }
-      #sidebar nav a {
-        text-align: center;
-        padding: 0.6rem 0;
-        font-size: 1.3rem;
-      }
-      #main-content {
-        padding: 1rem 0.8rem;
-      }
-    }
+  .remove-column-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0.3rem;
+    transition: color 0.3s ease;
+  }
 
-  </style>
+  .remove-column-btn:hover {
+    color: #e74c3c;
+  }
+
+  /* Lista de tarefas */
+  .task-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Item da tarefa */
+  .task-list li {
+    background: #ecf0f1;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+  }
+
+  .task-list li.high-priority {
+    border-left: 5px solid #e74c3c; /* vermelho */
+  }
+
+  .task-list li.medium-priority {
+    border-left: 5px solid #f39c12; /* amarelo */
+  }
+
+  .task-list li.low-priority {
+    border-left: 5px solid #27ae60; /* verde */
+  }
+
+  .task-list li.dragging {
+    opacity: 0.5;
+  }
+
+  /* Botão adicionar tarefa */
+  .column > button {
+    background-color: #27ae60;
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 0 0 6px 6px;
+    transition: background-color 0.3s ease;
+  }
+
+  .column > button:hover {
+    background-color: #219150;
+  }
+
+  /* Métricas */
+  #metrics {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  /* Modal */
+  #modal-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  #modal {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    width: 320px;
+    max-width: 90%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  #modal label {
+    font-weight: bold;
+  }
+
+  #modal input[type="text"],
+  #modal textarea,
+  #modal select {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  #modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  #modal-buttons button {
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+  }
+
+  #modal-cancel {
+    background: #e74c3c;
+    color: white;
+  }
+
+  #modal-save {
+    background: #27ae60;
+    color: white;
+  }
+
+  /* Botão para adicionar coluna (etapa) */
+  #add-column-btn {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    align-self: start;
+    transition: background-color 0.3s ease;
+  }
+
+  #add-column-btn:hover {
+    background-color: #1f5f8b;
+  }
+</style>
 </head>
 <body>
 
-  <aside id="sidebar" role="navigation" aria-label="Menu lateral">
-    <h2>Finance</h2>
-    <nav>
-      <a href="#" class="active" data-module="kanban" tabindex="0">📋 Kanban</a>
-      <a href="#" data-module="reports" tabindex="0">📊 Relatórios</a>
-      <a href="#" data-module="portfolio" tabindex="0">💼 Portfólio</a>
-      <a href="#" data-module="settings" tabindex="0">⚙️ Configurações</a>
-    </nav>
-  </aside>
+<div id="sidebar">
+  <h2>Menu</h2>
+  <nav>
+    <a href="#" class="active" data-module="kanban">📋 Kanban</a>
+    <a href="#" data-module="analytics">📈 Analytics</a>
+    <a href="#" data-module="settings">⚙️ Configurações</a>
+  </nav>
+</div>
 
-  <main id="main-content" role="main" tabindex="-1">
-    <button id="add-column-btn" aria-label="Adicionar nova etapa no kanban">+ Nova Etapa</button>
+<main>
+  <section id="filters">
+    <input type="text" id="filter-title" placeholder="Filtrar por título..." />
+    <select id="filter-priority">
+      <option value="">Todas prioridades</option>
+      <option value="high">Alta</option>
+      <option value="medium">Média</option>
+      <option value="low">Baixa</option>
+    </select>
+    <input type="text" id="filter-responsible" placeholder="Filtrar por responsável..." />
+  </section>
 
-    <div id="filters" role="search" aria-label="Filtros para tarefas">
-      <input type="text" id="filter-title" placeholder="Filtrar por título" aria-label="Filtro por título" />
-      <select id="filter-priority" aria-label="Filtro por prioridade">
-        <option value="">Todas prioridades</option>
-        <option value="Alta">Alta</option>
-        <option value="Média">Média</option>
-        <option value="Baixa">Baixa</option>
-      </select>
-      <input type="text" id="filter-responsible" placeholder="Filtrar por responsável" aria-label="Filtro por responsável" />
+  <section id="columns-container"></section>
+
+  <button id="add-column-btn">+ Adicionar etapa</button>
+
+  <div id="metrics"></div>
+</main>
+
+<!-- Modal para editar/adicionar tarefa -->
+<div id="modal-bg">
+  <div id="modal">
+    <label for="task-title">Título:</label>
+    <input type="text" id="task-title" />
+
+    <label for="task-description">Descrição:</label>
+    <textarea id="task-description" rows="3"></textarea>
+
+    <label for="task-priority">Prioridade:</label>
+    <select id="task-priority">
+      <option value="high">Alta</option>
+      <option value="medium">Média</option>
+      <option value="low">Baixa</option>
+    </select>
+
+    <label for="task-responsible">Responsável:</label>
+    <input type="text" id="task-responsible" />
+
+    <div id="modal-buttons">
+      <button id="modal-cancel">Cancelar</button>
+      <button id="modal-save">Salvar</button>
     </div>
-
-    <div id="columns-container" aria-live="polite" aria-relevant="additions removals"></div>
-
-    <div id="metrics" aria-live="polite" aria-atomic="true"></div>
-
-    <!-- Modal de edição/criação -->
-    <div id="modal-bg" role="dialog" aria-modal="true" aria-labelledby="modal-label" tabindex="-1">
-      <form id="modal" onsubmit="return false;">
-        <h3 id="modal-label">Editar Tarefa</h3>
-        <label for="modal-title">Título *</label>
-        <input type="text" id="modal-title" required autocomplete="off" />
-        <label for="modal-desc">Descrição</label>
-        <textarea id="modal-desc" rows="3"></textarea>
-        <label for="modal-priority">Prioridade</label>
-        <select id="modal-priority">
-          <option value="Alta">Alta</option>
-          <option value="Média" selected>Média</option>
-          <option value="Baixa">Baixa</option>
-        </select>
-        <label for="modal-responsible">Responsável</label>
-        <input type="text" id="modal-responsible" autocomplete="off" />
-        <div id="modal-buttons">
-          <button type="button" id="modal-cancel">Cancelar</button>
-          <button type="submit" id="modal-save">Salvar</button>
-        </div>
-      </form>
-    </div>
-
-  </main>
+  </div>
+</div>
 
 <script>
-  // Dados e persistência
-  const columnsKey = 'kanban-columns';
-  const tasksKey = 'kanban-tasks';
-
-  let columns = JSON.parse(localStorage.getItem(columnsKey)) || [
-    { id: 'col-1', name: 'A Fazer' },
-    { id: 'col-2', name: 'Em Progresso' },
-    { id: 'col-3', name: 'Concluído' }
+  // Dados iniciais
+  let columns = [
+    { id: 'todo', name: 'A Fazer' },
+    { id: 'inprogress', name: 'Em Progresso' },
+    { id: 'done', name: 'Concluído' },
   ];
 
-  let tasks = JSON.parse(localStorage.getItem(tasksKey)) || [];
+  let tasks = [
+    { id: 't1', title: 'Comprar ações da Apple', description: 'Pesquisar preço e comprar.', priority: 'high', responsible: 'Carlos', status: 'todo' },
+    { id: 't2', title: 'Analisar relatório trimestral', description: 'Revisar os dados financeiros.', priority: 'medium', responsible: 'Ana', status: 'inprogress' },
+    { id: 't3', title: 'Reunião com investidores', description: 'Preparar apresentação.', priority: 'low', responsible: 'João', status: 'done' },
+  ];
 
+  // Salvar e carregar do localStorage
   function saveColumns() {
-    localStorage.setItem(columnsKey, JSON.stringify(columns));
-  }
-  function saveTasks() {
-    localStorage.setItem(tasksKey, JSON.stringify(tasks));
+    localStorage.setItem('kanban-columns', JSON.stringify(columns));
   }
 
-  // Renderiza as colunas e tarefas
+  function saveTasks() {
+    localStorage.setItem('kanban-tasks', JSON.stringify(tasks));
+  }
+
+  function loadData() {
+    const savedColumns = localStorage.getItem('kanban-columns');
+    const savedTasks = localStorage.getItem('kanban-tasks');
+    if (savedColumns) columns = JSON.parse(savedColumns);
+    if (savedTasks) tasks = JSON.parse(savedTasks);
+  }
+
+  loadData();
+
+  // Renderiza colunas e tarefas
   function renderColumns() {
     const container = document.getElementById('columns-container');
     container.innerHTML = '';
 
-    const titleFilter = document.getElementById('filter-title').value.toLowerCase();
-    const priorityFilter = document.getElementById('filter-priority').value;
-    const responsibleFilter = document.getElementById('filter-responsible').value.toLowerCase();
-
-    columns.forEach((col, idx) => {
+    columns.forEach(col => {
       const colDiv = document.createElement('div');
       colDiv.className = 'column';
+      colDiv.dataset.id = col.id;
 
-      const headerDiv = document.createElement('div');
-      headerDiv.className = 'column-header';
+      // Header com input para editar nome e botão remover
+      const header = document.createElement('div');
+      header.className = 'column-header';
 
-      const inputTitle = document.createElement('input');
-      inputTitle.type = 'text';
-      inputTitle.value = col.name;
-      inputTitle.title = "Clique e altere o nome da etapa";
-      inputTitle.addEventListener('change', e => {
-        const val = e.target.value.trim();
-        if (val) {
-          columns[idx].name = val;
-          saveColumns();
-          renderColumns();
-        } else {
-          e.target.value = columns[idx].name;
-        }
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = col.name;
+      input.title = 'Clique para editar nome da etapa';
+      input.addEventListener('change', e => {
+        col.name = e.target.value.trim() || col.name;
+        saveColumns();
+        renderMetrics();
       });
-      headerDiv.appendChild(inputTitle);
 
-      if (columns.length > 1) {
-        const delBtn = document.createElement('button');
-        delBtn.className = 'remove-column-btn';
-        delBtn.textContent = '✕';
-        delBtn.title = 'Remover etapa (as tarefas serão movidas para a primeira etapa)';
-        delBtn.onclick = () => {
-          tasks.forEach(task => {
-            if (task.status === col.id) {
-              task.status = columns[0].id;
-            }
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-column-btn';
+      removeBtn.textContent = '×';
+      removeBtn.title = 'Remover etapa';
+      removeBtn.addEventListener('click', () => {
+        if (confirm(`Remover etapa "${col.name}"? As tarefas serão movidas para a primeira etapa.`)) {
+          // Move tasks para primeira coluna
+          const firstColId = columns[0].id;
+          tasks.forEach(t => {
+            if (t.status === col.id) t.status = firstColId;
           });
-          columns.splice(idx, 1);
+          columns = columns.filter(c => c.id !== col.id);
           saveColumns();
           saveTasks();
           renderColumns();
-        };
-        headerDiv.appendChild(delBtn);
-      }
+          renderMetrics();
+        }
+      });
 
-      colDiv.appendChild(headerDiv);
+      header.appendChild(input);
+      if(columns.length > 1) header.appendChild(removeBtn);
 
+      colDiv.appendChild(header);
+
+      // Lista tarefas filtradas para essa coluna
       const ul = document.createElement('ul');
       ul.className = 'task-list';
-      ul.id = col.id;
-      ul.addEventListener('dragover', allowDrop);
-      ul.addEventListener('drop', drop);
+      ul.dataset.status = col.id;
 
-      tasks.filter(t => 
-        t.status === col.id &&
-        t.title.toLowerCase().includes(titleFilter) &&
-        (priorityFilter === '' || t.priority === priorityFilter) &&
-        t.responsible.toLowerCase().includes(responsibleFilter)
-      ).forEach(task => {
+      const filteredTasks = tasks.filter(t => {
+        if(t.status !== col.id) return false;
+
+        const titleFilter = document.getElementById('filter-title').value.toLowerCase();
+        const priorityFilter = document.getElementById('filter-priority').value;
+        const respFilter = document.getElementById('filter-responsible').value.toLowerCase();
+
+        if(titleFilter && !t.title.toLowerCase().includes(titleFilter)) return false;
+        if(priorityFilter && t.priority !== priorityFilter) return false;
+        if(respFilter && !t.responsible.toLowerCase().includes(respFilter)) return false;
+
+        return true;
+      });
+
+      filteredTasks.forEach(task => {
         const li = document.createElement('li');
         li.textContent = task.title;
+        li.className = task.priority + '-priority';
         li.draggable = true;
         li.dataset.id = task.id;
-        li.title = `Prioridade: ${task.priority}\nResponsável: ${task.responsible}`;
-        li.classList.toggle('high-priority', task.priority === 'Alta');
-        li.classList.toggle('medium-priority', task.priority === 'Média');
-        li.classList.toggle('low-priority', task.priority === 'Baixa');
-        li.addEventListener('dragstart', dragStart);
-        li.addEventListener('click', () => openModal(task.id));
+
+        // Drag events
+        li.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', task.id);
+          li.classList.add('dragging');
+        });
+        li.addEventListener('dragend', e => {
+          li.classList.remove('dragging');
+        });
+
+        // Click para editar tarefa
+        li.addEventListener('click', () => openTaskModal(task));
 
         ul.appendChild(li);
       });
 
+      // Permitir drop na coluna
+      ul.addEventListener('dragover', e => e.preventDefault());
+      ul.addEventListener('drop', e => {
+        e.preventDefault();
+        const taskId = e.dataTransfer.getData('text/plain');
+        const task = tasks.find(t => t.id === taskId);
+        if (task && task.status !== col.id) {
+          task.status = col.id;
+          saveTasks();
+          renderColumns();
+          renderMetrics();
+        }
+      });
+
       colDiv.appendChild(ul);
 
+      // Botão adicionar tarefa
       const addTaskBtn = document.createElement('button');
       addTaskBtn.textContent = '+ Adicionar Tarefa';
-      addTaskBtn.style.marginTop = '0.5rem';
-      addTaskBtn.onclick = () => openModal(null, col.id);
-
+      addTaskBtn.addEventListener('click', () => openTaskModal(null, col.id));
       colDiv.appendChild(addTaskBtn);
 
       container.appendChild(colDiv);
     });
 
-    document.getElementById('columns-container').style.gridTemplateColumns = 
-      `repeat(auto-fit, minmax(250px, 1fr))`;
-
-    updateMetrics();
+    renderMetrics();
   }
 
-  // Modal de tarefa
-  let editingTaskId = null;
+  // Modal controle
+  const modalBg = document.getElementById('modal-bg');
+  const taskTitleInput = document.getElementById('task-title');
+  const taskDescInput = document.getElementById('task-description');
+  const taskPrioritySelect = document.getElementById('task-priority');
+  const taskResponsibleInput = document.getElementById('task-responsible');
+  let editingTask = null; // null = new task
+  let editingStatus = null;
 
-  function openModal(taskId, forcedStatus) {
-    editingTaskId = taskId;
-    const modalBg = document.getElementById('modal-bg');
+  function openTaskModal(task, status) {
+    editingTask = task;
+    editingStatus = status || (task ? task.status : columns[0].id);
+    taskTitleInput.value = task ? task.title : '';
+    taskDescInput.value = task ? task.description : '';
+    taskPrioritySelect.value = task ? task.priority : 'medium';
+    taskResponsibleInput.value = task ? task.responsible : '';
     modalBg.style.display = 'flex';
-
-    const task = tasks.find(t => t.id === taskId);
-
-    document.getElementById('modal-title').value = task ? task.title : '';
-    document.getElementById('modal-desc').value = task ? task.description : '';
-    document.getElementById('modal-priority').value = task ? task.priority : 'Média';
-    document.getElementById('modal-responsible').value = task ? task.responsible : '';
-    modalBg.dataset.forcedStatus = forcedStatus || '';
-
-    // Foco inicial no input título
-    setTimeout(() => {
-      document.getElementById('modal-title').focus();
-    }, 100);
+    taskTitleInput.focus();
   }
 
-  document.getElementById('modal-cancel').onclick = () => {
-    document.getElementById('modal-bg').style.display = 'none';
-  };
+  document.getElementById('modal-cancel').addEventListener('click', () => {
+    modalBg.style.display = 'none';
+  });
 
-  document.getElementById('modal-save').onclick = () => {
-    const title = document.getElementById('modal-title').value.trim();
-    if (!title) {
-      alert('Título é obrigatório!');
+  document.getElementById('modal-save').addEventListener('click', () => {
+    const title = taskTitleInput.value.trim();
+    if(!title) {
+      alert('O título é obrigatório.');
+      taskTitleInput.focus();
       return;
     }
-    const desc = document.getElementById('modal-desc').value.trim();
-    const priority = document.getElementById('modal-priority').value;
-    const responsible = document.getElementById('modal-responsible').value.trim();
 
-    if (editingTaskId) {
-      // Edita existente
-      const task = tasks.find(t => t.id === editingTaskId);
-      if (task) {
-        task.title = title;
-        task.description = desc;
-        task.priority = priority;
-        task.responsible = responsible;
-      }
+    if(editingTask) {
+      // Edita tarefa existente
+      editingTask.title = title;
+      editingTask.description = taskDescInput.value.trim();
+      editingTask.priority = taskPrioritySelect.value;
+      editingTask.responsible = taskResponsibleInput.value.trim();
     } else {
-      // Cria novo
-      const newTask = {
-        id: 'task-' + Date.now(),
+      // Nova tarefa
+      tasks.push({
+        id: 't' + Date.now(),
         title,
-        description: desc,
-        priority,
-        responsible,
-        status: document.getElementById('modal-bg').dataset.forcedStatus || columns[0].id
-      };
-      tasks.push(newTask);
+        description: taskDescInput.value.trim(),
+        priority: taskPrioritySelect.value,
+        responsible: taskResponsibleInput.value.trim(),
+        status: editingStatus
+      });
     }
-
-    document.getElementById('modal-bg').style.display = 'none';
     saveTasks();
     renderColumns();
-  };
-
-  // Drag & Drop handlers
-  let draggedTaskId = null;
-
-  function dragStart(e) {
-    draggedTaskId = e.target.dataset.id;
-    e.dataTransfer.effectAllowed = 'move';
-    e.target.classList.add('dragging');
-  }
-  function allowDrop(e) {
-    e.preventDefault();
-  }
-  function drop(e) {
-    e.preventDefault();
-    const newStatus = e.currentTarget.id;
-    if (!draggedTaskId) return;
-
-    const task = tasks.find(t => t.id === draggedTaskId);
-    if (task && task.status !== newStatus) {
-      task.status = newStatus;
-      saveTasks();
-      renderColumns();
-    }
-    draggedTaskId = null;
-  }
+    modalBg.style.display = 'none';
+  });
 
   // Filtros
-  const filterTitle = document.getElementById('filter-title');
-  const filterPriority = document.getElementById('filter-priority');
-  const filterResponsible = document.getElementById('filter-responsible');
-
-  filterTitle.addEventListener('input', renderColumns);
-  filterPriority.addEventListener('change', renderColumns);
-  filterResponsible.addEventListener('input', renderColumns);
+  document.getElementById('filter-title').addEventListener('input', renderColumns);
+  document.getElementById('filter-priority').addEventListener('change', renderColumns);
+  document.getElementById('filter-responsible').addEventListener('input', renderColumns);
 
   // Métricas com ícones
-  function updateMetrics() {
+  function renderMetrics() {
     const total = tasks.length;
     const byStatus = {};
-    columns.forEach(col => byStatus[col.id] = 0);
+    columns.forEach(c => byStatus[c.id] = 0);
     tasks.forEach(t => {
-      if (byStatus[t.status] !== undefined) byStatus[t.status]++;
+      if(byStatus[t.status] !== undefined) byStatus[t.status]++;
     });
 
-    const statusIcons = {};
-    if(columns[0]) statusIcons[columns[0].id] = '📌';
-    if(columns[1]) statusIcons[columns[1].id] = '⏳';
-    if(columns[2]) statusIcons[columns[2].id] = '✅';
+    // Ícones Unicode simples
+    const iconDone = '✔️';
+    const iconInProgress = '⏳';
+    const iconTodo = '📝';
 
-    const metricsDiv = document.getElementById('metrics');
-    metricsDiv.innerHTML = `<p>📋 Total de tarefas: ${total}</p>` +
-      columns.map(col => 
-        `<p>${statusIcons[col.id] || '➡️'} ${col.name}: ${byStatus[col.id]}</p>`
-      ).join('');
+    let metricsHtml = `<strong>Métricas:</strong> Total: ${total} | `;
+    columns.forEach(c => {
+      let icon = '📌';
+      if(c.id === 'done') icon = iconDone;
+      else if(c.id === 'inprogress') icon = iconInProgress;
+      else if(c.id === 'todo') icon = iconTodo;
+
+      metricsHtml += `${icon} ${c.name}: ${byStatus[c.id]} | `;
+    });
+
+    document.getElementById('metrics').innerHTML = metricsHtml.slice(0, -3);
   }
 
-  // Adicionar nova coluna
+  // Adicionar coluna nova
   document.getElementById('add-column-btn').addEventListener('click', () => {
-    const name = prompt('Digite o nome da nova etapa:');
-    if (name && name.trim()) {
-      columns.push({ id: 'col-' + Date.now(), name: name.trim() });
+    let newName = prompt('Nome da nova etapa:');
+    if(newName) {
+      newName = newName.trim();
+      if(!newName) return alert('Nome inválido.');
+      // Gerar ID simples único
+      const newId = newName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+      columns.push({id: newId, name: newName});
       saveColumns();
       renderColumns();
     }
   });
 
-  // Sidebar navegação (exemplo simples)
-  document.querySelectorAll('#sidebar nav a').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      document.querySelectorAll('#sidebar nav a').forEach(a => a.classList.remove('active'));
-      e.target.classList.add('active');
-
-      // Aqui você pode trocar o conteúdo conforme módulo:
-      if(e.target.dataset.module === 'kanban') {
-        document.getElementById('main-content').style.display = 'flex';
-      } else {
-        document.getElementById('main-content').style.display = 'none';
-        alert(`Módulo "${e.target.textContent.trim()}" em desenvolvimento.`);
-      }
-    });
-  });
-
   // Inicializa
   renderColumns();
-
 </script>
+
 </body>
 </html>
