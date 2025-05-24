@@ -34,6 +34,19 @@
   <!-- Main -->
   <main class="flex-1 p-6 overflow-auto relative">
     <h2 class="text-2xl font-semibold mb-4">Kanban - Tarefas do Mercado</h2>
+
+    <!-- Filtros -->
+    <div class="mb-4 flex flex-wrap gap-4">
+      <input id="filter-title" type="text" placeholder="Filtrar por título..." class="p-2 border rounded" oninput="applyFilters()">
+      <select id="filter-priority" class="p-2 border rounded" onchange="applyFilters()">
+        <option value="">Todas as prioridades</option>
+        <option value="Baixa">Baixa</option>
+        <option value="Média">Média</option>
+        <option value="Alta">Alta</option>
+      </select>
+      <input id="filter-responsible" type="text" placeholder="Filtrar por responsável..." class="p-2 border rounded" oninput="applyFilters()">
+    </div>
+
     <div class="mb-4 flex gap-2">
       <input id="new-task" type="text" placeholder="Título da nova tarefa..." class="flex-1 p-2 border rounded" />
       <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded">Adicionar</button>
@@ -92,184 +105,22 @@
   </main>
 
   <script>
-    let taskId = 0;
-    let editingTask = null;
+    // ...código JS existente...
 
-    function allowDrop(ev) {
-      ev.preventDefault();
-    }
-
-    function drag(ev) {
-      ev.dataTransfer.setData("text", ev.target.id);
-    }
-
-    function drop(ev) {
-      ev.preventDefault();
-      const data = ev.dataTransfer.getData("text");
-      const task = document.getElementById(data);
-      ev.currentTarget.appendChild(task);
-      saveBoard();
-      updateMetrics();
-    }
-
-    function addTask() {
-      const input = document.getElementById('new-task');
-      const title = input.value.trim();
-      if (!title) return;
-      const task = createTaskElement({ id: 'task-' + taskId++, title, desc: '', priority: 'Média', deadline: '', responsible: '' });
-      document.getElementById('todo').appendChild(task);
-      input.value = '';
-      saveBoard();
-      updateMetrics();
-    }
-
-    function createTaskElement(data) {
-      const li = document.createElement('li');
-      li.id = data.id;
-      li.draggable = true;
-      li.ondragstart = drag;
-      li.className = 'p-2 bg-gray-100 rounded cursor-pointer';
-      li.dataset.info = JSON.stringify(data);
-
-      li.innerHTML = `
-        <div class="font-semibold">${data.title}</div>
-        <div class="text-sm text-gray-600">${data.priority} ${data.deadline ? ' - ' + data.deadline : ''}</div>
-        <div class="text-xs text-gray-500">${data.responsible || ''}</div>
-      `;
-
-      li.onclick = () => openModal(li);
-
-      return li;
-    }
-
-    function openModal(task) {
-      editingTask = task;
-      const data = JSON.parse(task.dataset.info);
-
-      document.getElementById('modal-title').value = data.title;
-      document.getElementById('modal-desc').value = data.desc;
-      document.getElementById('modal-priority').value = data.priority;
-      document.getElementById('modal-deadline').value = data.deadline;
-      document.getElementById('modal-responsible').value = data.responsible;
-
-      document.getElementById('modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('modal').classList.add('hidden');
-      editingTask = null;
-    }
-
-    function saveTaskChanges() {
-      const data = {
-        id: editingTask.id,
-        title: document.getElementById('modal-title').value,
-        desc: document.getElementById('modal-desc').value,
-        priority: document.getElementById('modal-priority').value,
-        deadline: document.getElementById('modal-deadline').value,
-        responsible: document.getElementById('modal-responsible').value
-      };
-
-      editingTask.dataset.info = JSON.stringify(data);
-      editingTask.innerHTML = `
-        <div class="font-semibold">${data.title}</div>
-        <div class="text-sm text-gray-600">${data.priority} ${data.deadline ? ' - ' + data.deadline : ''}</div>
-        <div class="text-xs text-gray-500">${data.responsible || ''}</div>
-      `;
-      closeModal();
-      saveBoard();
-      updateMetrics();
-    }
-
-    function saveBoard() {
-      const columns = ['todo', 'in-progress', 'done'];
-      const data = {};
-
-      columns.forEach(col => {
-        const ul = document.getElementById(col);
-        const tasks = [];
-        ul.querySelectorAll('li').forEach(task => {
-          tasks.push(JSON.parse(task.dataset.info));
-        });
-        data[col] = tasks;
-      });
-
-      localStorage.setItem('kanbanBoard', JSON.stringify(data));
-    }
-
-    function loadBoard() {
-      const saved = localStorage.getItem('kanbanBoard');
-      if (!saved) return;
-      const data = JSON.parse(saved);
-      const columns = ['todo', 'in-progress', 'done'];
-
-      columns.forEach(col => {
-        const ul = document.getElementById(col);
-        ul.innerHTML = '';
-        data[col].forEach(taskData => {
-          const task = createTaskElement(taskData);
-          ul.appendChild(task);
-        });
-      });
-    }
-
-    function updateMetrics() {
-      const columns = ['todo', 'in-progress', 'done'];
-      const counts = {};
-
-      columns.forEach(col => {
-        counts[col] = document.getElementById(col).children.length;
-      });
-
-      document.getElementById('metrics').innerText = `
-        A Fazer: ${counts.todo} | Em Progresso: ${counts['in-progress']} | Concluído: ${counts.done}
-      `;
-    }
-
-    function exportTasks() {
-      const data = localStorage.getItem('kanbanBoard');
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'kanban_export.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function importTasks(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = e => {
-        localStorage.setItem('kanbanBoard', e.target.result);
-        loadBoard();
-        updateMetrics();
-      };
-      reader.readAsText(file);
-    }
-
-    function checkDeadlines() {
-      const now = new Date().toISOString().split("T")[0];
-      ['todo', 'in-progress'].forEach(col => {
+    function applyFilters() {
+      const title = document.getElementById('filter-title').value.toLowerCase();
+      const priority = document.getElementById('filter-priority').value;
+      const responsible = document.getElementById('filter-responsible').value.toLowerCase();
+      ['todo', 'in-progress', 'done'].forEach(col => {
         document.getElementById(col).querySelectorAll('li').forEach(task => {
           const data = JSON.parse(task.dataset.info);
-          if (data.deadline && data.deadline < now) {
-            task.classList.add('bg-red-200');
-          } else {
-            task.classList.remove('bg-red-200');
-          }
+          const matchTitle = data.title.toLowerCase().includes(title);
+          const matchPriority = !priority || data.priority === priority;
+          const matchResponsible = data.responsible.toLowerCase().includes(responsible);
+          task.style.display = (matchTitle && matchPriority && matchResponsible) ? '' : 'none';
         });
       });
     }
-
-    window.onload = () => {
-      loadBoard();
-      updateMetrics();
-      checkDeadlines();
-      setInterval(checkDeadlines, 60 * 1000);
-    };
   </script>
 </body>
 </html>
