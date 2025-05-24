@@ -1,333 +1,484 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kanban Dinâmico - FinancePro</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <title>Kanban Dinâmico - Mercado Financeiro</title>
   <style>
-    .dragging {
-      opacity: 0.5;
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0; padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .modal-bg {
-      background: rgba(0, 0, 0, 0.5);
+    button {
+      cursor: pointer;
+    }
+    /* Container e grid */
+    #columns-container {
+      display: grid;
+      gap: 1rem;
+      /* grid-template-columns vai ser setado via JS */
+    }
+    /* Coluna */
+    .column {
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      min-height: 250px;
+    }
+    /* Título editável */
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .column-header input[type="text"] {
+      font-weight: 600;
+      font-size: 1.1rem;
+      border: none;
+      border-bottom: 2px solid transparent;
+      outline: none;
+      width: 100%;
+      background: transparent;
+      transition: border-color 0.3s;
+    }
+    .column-header input[type="text"]:focus {
+      border-color: #3b82f6;
+    }
+    .remove-column-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-weight: bold;
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 0 5px;
+      user-select: none;
+    }
+    /* Lista tarefas */
+    ul.task-list {
+      flex-grow: 1;
+      overflow-y: auto;
+      min-height: 150px;
+      padding-left: 0;
+      margin: 0;
+      list-style: none;
+    }
+    ul.task-list li {
+      background: #e5e7eb;
+      padding: 0.6rem 1rem;
+      margin: 0.5rem 0;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    ul.task-list li.dragging {
+      opacity: 0.6;
+    }
+    /* Botão adicionar etapa */
+    #add-column-btn {
+      background-color: #22c55e;
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+    /* Modal */
+    #modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    #modal {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      width: 320px;
+      max-width: 90vw;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #modal label {
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    #modal input, #modal select, #modal textarea {
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    #modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    #modal-buttons button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #modal-save {
+      background-color: #3b82f6;
+      color: white;
+    }
+    #modal-cancel {
+      background-color: #ef4444;
+      color: white;
+    }
+    /* Filters & Metrics */
+    #filters {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    #filters input, #filters select {
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+    #metrics {
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-top: 1rem;
     }
   </style>
 </head>
-<body class="flex h-screen bg-gray-100">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
-    <h1 class="text-2xl font-bold mb-6">FinancePro</h1>
-    <nav class="flex-1">
-      <ul class="space-y-2">
-        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Dashboard</a></li>
-        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Kanban</a></li>
-        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Carteira</a></li>
-        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Alertas</a></li>
-      </ul>
-    </nav>
-    <button onclick="exportTasks()" class="mt-4 bg-green-500 text-white px-4 py-2 rounded">Exportar JSON</button>
-    <input type="file" id="importFile" class="hidden" onchange="importTasks(event)" />
-    <button onclick="document.getElementById('importFile').click()" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">Importar JSON</button>
-  </aside>
+<body>
 
-  <!-- Main -->
-  <main class="flex-1 p-6 overflow-auto relative">
-    <h2 class="text-2xl font-semibold mb-4">Kanban - Tarefas do Mercado</h2>
+  <button id="add-column-btn">+ Nova Etapa</button>
 
-    <!-- Filtros -->
-    <div class="mb-4 flex flex-wrap gap-4">
-      <input id="filter-title" type="text" placeholder="Filtrar por título..." class="p-2 border rounded" oninput="applyFilters()" />
-      <select id="filter-priority" class="p-2 border rounded" onchange="applyFilters()">
-        <option value="">Todas as prioridades</option>
+  <div id="filters">
+    <input type="text" id="filter-title" placeholder="Filtrar por título" />
+    <select id="filter-priority">
+      <option value="">Todas prioridades</option>
+      <option value="Baixa">Baixa</option>
+      <option value="Média">Média</option>
+      <option value="Alta">Alta</option>
+    </select>
+    <input type="text" id="filter-responsible" placeholder="Filtrar por responsável" />
+  </div>
+
+  <div id="columns-container"></div>
+
+  <div id="metrics"></div>
+
+  <!-- Modal de edição -->
+  <div id="modal-bg">
+    <div id="modal">
+      <label for="modal-title">Título:</label>
+      <input id="modal-title" type="text" />
+
+      <label for="modal-desc">Descrição:</label>
+      <textarea id="modal-desc" rows="3"></textarea>
+
+      <label for="modal-priority">Prioridade:</label>
+      <select id="modal-priority">
         <option value="Baixa">Baixa</option>
         <option value="Média">Média</option>
         <option value="Alta">Alta</option>
       </select>
-      <input id="filter-responsible" type="text" placeholder="Filtrar por responsável..." class="p-2 border rounded" oninput="applyFilters()" />
-    </div>
 
-    <!-- Nova Tarefa -->
-    <div class="mb-4 flex gap-2">
-      <input id="new-task" type="text" placeholder="Título da nova tarefa..." class="flex-1 p-2 border rounded" />
-      <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded">Adicionar</button>
-    </div>
+      <label for="modal-responsible">Responsável:</label>
+      <input id="modal-responsible" type="text" />
 
-    <div class="grid grid-cols-3 gap-4">
-      <!-- Columns -->
-      <ul class="bg-white rounded shadow p-4 min-h-[150px]" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-        <h3 class="font-semibold text-lg mb-2">A Fazer</h3>
-      </ul>
-      <ul class="bg-white rounded shadow p-4 min-h-[150px]" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
-        <h3 class="font-semibold text-lg mb-2">Em Progresso</h3>
-      </ul>
-      <ul class="bg-white rounded shadow p-4 min-h-[150px]" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-        <h3 class="font-semibold text-lg mb-2">Concluído</h3>
-      </ul>
-    </div>
-
-    <div class="mt-8">
-      <h3 class="text-xl font-bold mb-2">📊 Métricas</h3>
-      <div id="metrics" class="text-gray-700"></div>
-    </div>
-
-    <!-- Modal -->
-    <div id="modal" class="fixed inset-0 hidden modal-bg flex justify-center items-center z-50">
-      <div class="bg-white p-6 rounded-lg shadow-md w-96">
-        <h3 class="text-xl font-bold mb-4">Editar Tarefa</h3>
-        <label class="block mb-2">Título
-          <input id="modal-title" class="w-full border p-2 rounded" />
-        </label>
-        <label class="block mb-2">Descrição
-          <textarea id="modal-desc" class="w-full border p-2 rounded"></textarea>
-        </label>
-        <label class="block mb-2">Prioridade
-          <select id="modal-priority" class="w-full border p-2 rounded">
-            <option value="Baixa">Baixa</option>
-            <option value="Média">Média</option>
-            <option value="Alta">Alta</option>
-          </select>
-        </label>
-        <label class="block mb-2">Prazo
-          <input type="date" id="modal-deadline" class="w-full border p-2 rounded" />
-        </label>
-        <label class="block mb-2">Responsável
-          <input id="modal-responsible" class="w-full border p-2 rounded" />
-        </label>
-        <div class="flex justify-end gap-2 mt-4">
-          <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
-          <button onclick="saveTaskChanges()" class="px-4 py-2 bg-blue-500 text-white rounded">Salvar</button>
-        </div>
+      <div id="modal-buttons">
+        <button id="modal-save">Salvar</button>
+        <button id="modal-cancel">Cancelar</button>
       </div>
     </div>
-  </main>
+  </div>
 
-  <script>
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    let draggedTaskId = null;
+<script>
+  // Dados iniciais
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  let columns = JSON.parse(localStorage.getItem('columns')) || [
+    { id: 'todo', name: 'A Fazer' },
+    { id: 'in-progress', name: 'Em Progresso' },
+    { id: 'done', name: 'Concluído' }
+  ];
 
-    function saveTasks() {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      renderTasks();
-      updateMetrics();
-    }
+  // Salva dados no localStorage
+  function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    renderColumns();
+    updateMetrics();
+  }
+  function saveColumns() {
+    localStorage.setItem('columns', JSON.stringify(columns));
+  }
 
-    function renderTasks() {
-      const columns = {
-        todo: document.getElementById('todo'),
-        'in-progress': document.getElementById('in-progress'),
-        done: document.getElementById('done')
-      };
+  // Renderiza as colunas e tarefas
+  function renderColumns() {
+    const container = document.getElementById('columns-container');
+    container.innerHTML = '';
 
-      // Limpa as tarefas (deixa só o título)
-      for (const colId in columns) {
-        // remove tudo exceto o título (que é o primeiro filho)
-        const col = columns[colId];
-        while (col.children.length > 1) {
-          col.removeChild(col.lastChild);
+    columns.forEach((col, idx) => {
+      const colDiv = document.createElement('div');
+      colDiv.className = 'column';
+
+      // Cabeçalho com input para editar nome
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'column-header';
+
+      const inputTitle = document.createElement('input');
+      inputTitle.type = 'text';
+      inputTitle.value = col.name;
+      inputTitle.title = "Clique e altere o nome da etapa";
+      inputTitle.addEventListener('change', e => {
+        const val = e.target.value.trim();
+        if (val) {
+          columns[idx].name = val;
+          saveColumns();
+          renderColumns();
+        } else {
+          // Não permite nome vazio, restaura anterior
+          e.target.value = columns[idx].name;
         }
+      });
+
+      headerDiv.appendChild(inputTitle);
+
+      // Botão remover coluna (exceto se só restar uma)
+      if (columns.length > 1) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'remove-column-btn';
+        delBtn.textContent = '✕';
+        delBtn.title = 'Remover etapa (as tarefas serão movidas para a primeira etapa)';
+        delBtn.onclick = () => {
+          // Move as tarefas da coluna para a primeira
+          tasks.forEach(task => {
+            if (task.status === col.id) {
+              task.status = columns[0].id;
+            }
+          });
+          columns.splice(idx, 1);
+          saveColumns();
+          saveTasks();
+        };
+        headerDiv.appendChild(delBtn);
       }
 
-      tasks.forEach(task => {
+      colDiv.appendChild(headerDiv);
+
+      // Lista de tarefas da coluna
+      const ul = document.createElement('ul');
+      ul.className = 'task-list';
+      ul.id = col.id;
+
+      ul.addEventListener('dragover', allowDrop);
+      ul.addEventListener('drop', drop);
+
+      tasks.filter(t => t.status === col.id).forEach(task => {
         const li = document.createElement('li');
         li.textContent = task.title;
         li.draggable = true;
         li.dataset.id = task.id;
-        li.dataset.info = JSON.stringify(task);
-        li.className = 'p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300 mt-2';
 
-        // Abrir modal para editar tarefa ao clicar
-        li.addEventListener('click', () => openModal(task.id));
-
-        // Drag and drop events
         li.addEventListener('dragstart', dragStart);
         li.addEventListener('dragend', dragEnd);
+        li.addEventListener('click', () => openModal(task.id));
 
-        columns[task.status].appendChild(li);
+        ul.appendChild(li);
       });
 
-      applyFilters();
+      colDiv.appendChild(ul);
+      container.appendChild(colDiv);
+    });
+
+    // Ajusta grid colunas conforme qtde
+    const colsCount = columns.length;
+    const maxCols = 5;
+    document.getElementById('columns-container').style.gridTemplateColumns = `repeat(${colsCount > maxCols ? maxCols : colsCount}, minmax(0, 1fr))`;
+  }
+
+  // Adiciona nova coluna via prompt
+  function addColumn() {
+    let nome = prompt('Digite o nome da nova etapa:');
+    if (!nome) return;
+    nome = nome.trim();
+    if (!nome) return;
+
+    // Gera ID baseado no nome
+    const idBase = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, '-');
+    let id = idBase;
+    let i = 1;
+    while(columns.some(c => c.id === id)) {
+      id = `${idBase}-${i++}`;
     }
 
-    function addTask() {
-      const input = document.getElementById('new-task');
-      const title = input.value.trim();
-      if (!title) {
-        alert('Por favor, insira o título da tarefa.');
-        return;
-      }
+    columns.push({ id, name: nome });
+    saveColumns();
+    renderColumns();
+  }
 
-      const newTask = {
-        id: Date.now(),
-        title: title,
-        description: '',
-        priority: 'Média',
-        deadline: '',
-        responsible: '',
-        status: 'todo'
-      };
+  // Drag & Drop Handlers
+  let draggedTaskId = null;
 
-      tasks.push(newTask);
+  function dragStart(event) {
+    draggedTaskId = event.target.dataset.id;
+    event.dataTransfer.setData('text/plain', draggedTaskId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.target.classList.add('dragging');
+  }
+
+  function dragEnd(event) {
+    event.target.classList.remove('dragging');
+    draggedTaskId = null;
+  }
+
+  function allowDrop(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  function drop(event) {
+    event.preventDefault();
+    const dropZone = event.currentTarget;
+    const id = event.dataTransfer.getData('text/plain');
+
+    const task = tasks.find(t => t.id == id);
+    if (!task) return;
+
+    if (task.status !== dropZone.id) {
+      task.status = dropZone.id;
       saveTasks();
-      input.value = '';
     }
+  }
 
-    function openModal(id) {
-      const task = tasks.find(t => t.id === id);
-      if (!task) return;
+  // Modal de edição
+  let currentEditTaskId = null;
 
-      document.getElementById('modal-title').value = task.title;
-      document.getElementById('modal-desc').value = task.description;
-      document.getElementById('modal-priority').value = task.priority;
-      document.getElementById('modal-deadline').value = task.deadline;
-      document.getElementById('modal-responsible').value = task.responsible;
+  const modalBg = document.getElementById('modal-bg');
+  const modalTitle = document.getElementById('modal-title');
+  const modalDesc = document.getElementById('modal-desc');
+  const modalPriority = document.getElementById('modal-priority');
+  const modalResponsible = document.getElementById('modal-responsible');
+  const modalSaveBtn = document.getElementById('modal-save');
+  const modalCancelBtn = document.getElementById('modal-cancel');
 
-      document.getElementById('modal').dataset.currentId = id;
-      document.getElementById('modal').classList.remove('hidden');
-    }
+  function openModal(id) {
+    currentEditTaskId = id;
+    const task = tasks.find(t => t.id == id);
+    if (!task) return;
 
-    function closeModal() {
-      document.getElementById('modal').classList.add('hidden');
-    }
+    modalTitle.value = task.title;
+    modalDesc.value = task.description;
+    modalPriority.value = task.priority;
+    modalResponsible.value = task.responsible;
 
-    function saveTaskChanges() {
-      const id = Number(document.getElementById('modal').dataset.currentId);
-      const task = tasks.find(t => t.id === id);
-      if (!task) return;
+    modalBg.style.display = 'flex';
+  }
 
-      task.title = document.getElementById('modal-title').value.trim();
-      task.description = document.getElementById('modal-desc').value.trim();
-      task.priority = document.getElementById('modal-priority').value;
-      task.deadline = document.getElementById('modal-deadline').value;
-      task.responsible = document.getElementById('modal-responsible').value.trim();
+  function closeModal() {
+    modalBg.style.display = 'none';
+    currentEditTaskId = null;
+  }
 
-      saveTasks();
-      closeModal();
-    }
+  modalSaveBtn.addEventListener('click', () => {
+    if (!currentEditTaskId) return;
 
-    // Drag & Drop Handlers
-    function dragStart(event) {
-      draggedTaskId = event.target.dataset.id;
-      event.dataTransfer.setData('text/plain', draggedTaskId);
-      event.dataTransfer.effectAllowed = 'move';
-      event.target.classList.add('dragging');
-      // console.log('dragStart', draggedTaskId);
-    }
+    const task = tasks.find(t => t.id == currentEditTaskId);
+    if (!task) return;
 
-    function dragEnd(event) {
-      event.target.classList.remove('dragging');
-      draggedTaskId = null;
-      // console.log('dragEnd');
-    }
+    task.title = modalTitle.value.trim() || task.title;
+    task.description = modalDesc.value.trim();
+    task.priority = modalPriority.value;
+    task.responsible = modalResponsible.value.trim();
 
-    function allowDrop(event) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-    }
+    saveTasks();
+    closeModal();
+  });
 
-    function drop(event) {
-      event.preventDefault();
-      const dropZone = event.currentTarget;
-      const id = event.dataTransfer.getData('text/plain');
-      // console.log('drop', id, 'on', dropZone.id);
+  modalCancelBtn.addEventListener('click', closeModal);
+  modalBg.addEventListener('click', e => {
+    if (e.target === modalBg) closeModal();
+  });
 
-      const task = tasks.find(t => t.id == id);
-      if (!task) return;
+  // Filtros
+  function applyFilters() {
+    const titleFilter = document.getElementById('filter-title').value.toLowerCase();
+    const priorityFilter = document.getElementById('filter-priority').value;
+    const responsibleFilter = document.getElementById('filter-responsible').value.toLowerCase();
 
-      // Atualiza status só se mudou de coluna
-      if (task.status !== dropZone.id) {
-        task.status = dropZone.id;
-        saveTasks();
+    columns.forEach(col => {
+      const ul = document.getElementById(col.id);
+      if (!ul) return;
+
+      for (const li of ul.children) {
+        const task = tasks.find(t => t.id == li.dataset.id);
+        if (!task) continue;
+
+        const matchTitle = task.title.toLowerCase().includes(titleFilter);
+        const matchPriority = priorityFilter === '' || task.priority === priorityFilter;
+        const matchResponsible = task.responsible.toLowerCase().includes(responsibleFilter);
+
+        li.style.display = (matchTitle && matchPriority && matchResponsible) ? '' : 'none';
       }
-    }
+    });
+  }
 
-    // Filtros
-    function applyFilters() {
-      const titleFilter = document.getElementById('filter-title').value.toLowerCase();
-      const priorityFilter = document.getElementById('filter-priority').value;
-      const responsibleFilter = document.getElementById('filter-responsible').value.toLowerCase();
+  document.getElementById('filter-title').addEventListener('input', applyFilters);
+  document.getElementById('filter-priority').addEventListener('change', applyFilters);
+  document.getElementById('filter-responsible').addEventListener('input', applyFilters);
 
-      const columns = {
-        todo: document.getElementById('todo'),
-        'in-progress': document.getElementById('in-progress'),
-        done: document.getElementById('done')
-      };
+  // Métricas simples
+  function updateMetrics() {
+    const total = tasks.length;
 
-      for (const colId in columns) {
-        const col = columns[colId];
-        for (let i = 1; i < col.children.length; i++) {
-          const li = col.children[i];
-          const task = tasks.find(t => t.id == li.dataset.id);
-          if (!task) continue;
+    // Contagem por status (coluna)
+    const byStatus = {};
+    columns.forEach(col => byStatus[col.id] = 0);
+    tasks.forEach(t => {
+      if (byStatus[t.status] !== undefined) byStatus[t.status]++;
+    });
 
-          const matchTitle = task.title.toLowerCase().includes(titleFilter);
-          const matchPriority = priorityFilter === '' || task.priority === priorityFilter;
-          const matchResponsible = task.responsible.toLowerCase().includes(responsibleFilter);
+    // Contagem por prioridade
+    const byPriority = { Baixa: 0, Média: 0, Alta: 0 };
+    tasks.forEach(t => {
+      if (byPriority[t.priority] !== undefined) byPriority[t.priority]++;
+    });
 
-          if (matchTitle && matchPriority && matchResponsible) {
-            li.style.display = '';
-          } else {
-            li.style.display = 'none';
-          }
-        }
-      }
-    }
+    const metricsDiv = document.getElementById('metrics');
 
-    // Métricas simples
-    function updateMetrics() {
-      const total = tasks.length;
-      const byStatus = { todo: 0, 'in-progress': 0, done: 0 };
-      const byPriority = { Baixa: 0, Média: 0, Alta: 0 };
+    let statusText = columns.map(col => `${col.name}: <b>${byStatus[col.id]}</b>`).join(' | ');
 
-      tasks.forEach(t => {
-        if (byStatus[t.status] !== undefined) byStatus[t.status]++;
-        if (byPriority[t.priority] !== undefined) byPriority[t.priority]++;
-      });
+    metricsDiv.innerHTML = `
+      Total de tarefas: <b>${total}</b><br/>
+      ${statusText}<br/>
+      Prioridade - Baixa: <b>${byPriority.Baixa}</b>, Média: <b>${byPriority.Média}</b>, Alta: <b>${byPriority.Alta}</b>
+    `;
+  }
 
-      const metricsDiv = document.getElementById('metrics');
-      metricsDiv.innerHTML = `
-        Total de tarefas: <b>${total}</b><br/>
-        A Fazer: <b>${byStatus.todo}</b> | Em Progresso: <b>${byStatus['in-progress']}</b> | Concluído: <b>${byStatus.done}</b><br/>
-        Prioridade - Baixa: <b>${byPriority.Baixa}</b>, Média: <b>${byPriority.Média}</b>, Alta: <b>${byPriority.Alta}</b>
-      `;
-    }
+  // Botão adicionar coluna
+  document.getElementById('add-column-btn').addEventListener('click', addColumn);
 
-    // Exportar JSON
-    function exportTasks() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks));
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.setAttribute("href", dataStr);
-      downloadAnchorNode.setAttribute("download", "tasks.json");
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      downloadAnchorNode.remove();
-    }
-
-    // Importar JSON
-    function importTasks(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (Array.isArray(imported)) {
-            tasks = imported;
-            saveTasks();
-          } else {
-            alert('Arquivo JSON inválido.');
-          }
-        } catch (error) {
-          alert('Erro ao ler arquivo JSON.');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // Inicialização
-    renderTasks();
-    updateMetrics();
-  </script>
+  // Inicialização
+  renderColumns();
+  updateMetrics();
+</script>
 </body>
 </html>
