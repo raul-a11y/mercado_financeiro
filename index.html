@@ -9,9 +9,18 @@
     .dragging {
       opacity: 0.5;
     }
+    .status-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid #ddd;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      z-index: 50;
+    }
   </style>
 </head>
-<body class="flex h-screen bg-gray-100">
+<body class="flex h-screen bg-gray-100" onclick="hideStatusMenu(event)">
   <!-- Sidebar -->
   <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
     <h1 class="text-2xl font-bold mb-6">FinancePro</h1>
@@ -26,7 +35,7 @@
   </aside>
 
   <!-- Main -->
-  <main class="flex-1 p-6 overflow-auto">
+  <main class="flex-1 p-6 overflow-auto relative">
     <h2 class="text-2xl font-semibold mb-4">Kanban - Tarefas do Mercado</h2>
     <div class="mb-4 flex gap-2">
       <input id="new-task" type="text" placeholder="Nova tarefa..." class="flex-1 p-2 border rounded" />
@@ -48,10 +57,13 @@
         <ul id="done" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
       </div>
     </div>
+
+    <div id="statusMenu" class="status-menu hidden"></div>
   </main>
 
   <script>
     let taskId = 0;
+    let selectedTask = null;
 
     function allowDrop(ev) {
       ev.preventDefault();
@@ -92,7 +104,7 @@
       span.textContent = text;
       span.className = 'flex-1';
 
-      span.onclick = () => openStatusMenu(li);
+      span.onclick = (e) => openStatusMenu(li, e);
 
       const actions = document.createElement('div');
       actions.className = 'flex gap-2 ml-2';
@@ -122,15 +134,34 @@
       return li;
     }
 
-    function openStatusMenu(task) {
-      const status = prompt("Mover para:", "todo, in-progress, done");
-      const valid = ['todo', 'in-progress', 'done'];
-      if (valid.includes(status)) {
-        document.getElementById(status).appendChild(task);
-        saveBoard();
-      } else {
-        alert("Opção inválida. Use: todo, in-progress ou done");
+    function openStatusMenu(task, event) {
+      event.stopPropagation();
+      selectedTask = task;
+      const menu = document.getElementById('statusMenu');
+      menu.innerHTML = `
+        <p class='mb-2 font-semibold'>Mover para:</p>
+        <button onclick="moveTask('todo')" class="block w-full text-left hover:bg-gray-200 p-1 rounded">A Fazer</button>
+        <button onclick="moveTask('in-progress')" class="block w-full text-left hover:bg-gray-200 p-1 rounded">Em Progresso</button>
+        <button onclick="moveTask('done')" class="block w-full text-left hover:bg-gray-200 p-1 rounded">Concluído</button>
+      `;
+      menu.style.top = event.clientY + 'px';
+      menu.style.left = event.clientX + 'px';
+      menu.classList.remove('hidden');
+    }
+
+    function hideStatusMenu(e) {
+      const menu = document.getElementById('statusMenu');
+      if (!menu.contains(e.target)) {
+        menu.classList.add('hidden');
       }
+    }
+
+    function moveTask(status) {
+      if (!selectedTask) return;
+      document.getElementById(status).appendChild(selectedTask);
+      document.getElementById('statusMenu').classList.add('hidden');
+      selectedTask = null;
+      saveBoard();
     }
 
     function saveBoard() {
