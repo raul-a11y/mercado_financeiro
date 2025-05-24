@@ -55,18 +55,15 @@
 
     <div class="grid grid-cols-3 gap-4">
       <!-- Columns -->
-      <div class="bg-white rounded shadow p-4">
+      <ul class="bg-white rounded shadow p-4 min-h-[150px]" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
         <h3 class="font-semibold text-lg mb-2">A Fazer</h3>
-        <ul id="todo" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
-      </div>
-      <div class="bg-white rounded shadow p-4">
+      </ul>
+      <ul class="bg-white rounded shadow p-4 min-h-[150px]" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
         <h3 class="font-semibold text-lg mb-2">Em Progresso</h3>
-        <ul id="in-progress" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
-      </div>
-      <div class="bg-white rounded shadow p-4">
+      </ul>
+      <ul class="bg-white rounded shadow p-4 min-h-[150px]" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
         <h3 class="font-semibold text-lg mb-2">Concluído</h3>
-        <ul id="done" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
-      </div>
+      </ul>
     </div>
 
     <div class="mt-8">
@@ -122,7 +119,14 @@
         done: document.getElementById('done')
       };
 
-      Object.values(columns).forEach(col => col.innerHTML = '');
+      // Limpa as tarefas (deixa só o título)
+      for (const colId in columns) {
+        // remove tudo exceto o título (que é o primeiro filho)
+        const col = columns[colId];
+        while (col.children.length > 1) {
+          col.removeChild(col.lastChild);
+        }
+      }
 
       tasks.forEach(task => {
         const li = document.createElement('li');
@@ -130,7 +134,7 @@
         li.draggable = true;
         li.dataset.id = task.id;
         li.dataset.info = JSON.stringify(task);
-        li.className = 'p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300';
+        li.className = 'p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300 mt-2';
 
         // Abrir modal para editar tarefa ao clicar
         li.addEventListener('click', () => openModal(task.id));
@@ -201,68 +205,90 @@
       closeModal();
     }
 
-    // Drag and drop functions
+    // Drag & Drop Handlers
     function dragStart(event) {
       draggedTaskId = event.target.dataset.id;
       event.dataTransfer.setData('text/plain', draggedTaskId);
-      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.effectAllowed = 'move';
       event.target.classList.add('dragging');
+      // console.log('dragStart', draggedTaskId);
     }
 
     function dragEnd(event) {
       event.target.classList.remove('dragging');
       draggedTaskId = null;
+      // console.log('dragEnd');
     }
 
     function allowDrop(event) {
       event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
+      event.dataTransfer.dropEffect = 'move';
     }
 
     function drop(event) {
       event.preventDefault();
-      const columnId = event.currentTarget.id;
+      const dropZone = event.currentTarget;
+      const id = event.dataTransfer.getData('text/plain');
+      // console.log('drop', id, 'on', dropZone.id);
 
-      const taskId = event.dataTransfer.getData('text/plain');
-      if (!taskId) return;
+      const task = tasks.find(t => t.id == id);
+      if (!task) return;
 
-      const task = tasks.find(t => t.id == taskId);
-      if (task) {
-        task.status = columnId;
+      // Atualiza status só se mudou de coluna
+      if (task.status !== dropZone.id) {
+        task.status = dropZone.id;
         saveTasks();
       }
     }
 
     // Filtros
     function applyFilters() {
-      const title = document.getElementById('filter-title').value.toLowerCase();
-      const priority = document.getElementById('filter-priority').value;
-      const responsible = document.getElementById('filter-responsible').value.toLowerCase();
+      const titleFilter = document.getElementById('filter-title').value.toLowerCase();
+      const priorityFilter = document.getElementById('filter-priority').value;
+      const responsibleFilter = document.getElementById('filter-responsible').value.toLowerCase();
 
-      ['todo', 'in-progress', 'done'].forEach(col => {
-        document.getElementById(col).querySelectorAll('li').forEach(taskLi => {
-          const data = JSON.parse(taskLi.dataset.info);
-          const matchTitle = data.title.toLowerCase().includes(title);
-          const matchPriority = !priority || data.priority === priority;
-          const matchResponsible = data.responsible.toLowerCase().includes(responsible);
-          taskLi.style.display = (matchTitle && matchPriority && matchResponsible) ? '' : 'none';
-        });
-      });
+      const columns = {
+        todo: document.getElementById('todo'),
+        'in-progress': document.getElementById('in-progress'),
+        done: document.getElementById('done')
+      };
+
+      for (const colId in columns) {
+        const col = columns[colId];
+        for (let i = 1; i < col.children.length; i++) {
+          const li = col.children[i];
+          const task = tasks.find(t => t.id == li.dataset.id);
+          if (!task) continue;
+
+          const matchTitle = task.title.toLowerCase().includes(titleFilter);
+          const matchPriority = priorityFilter === '' || task.priority === priorityFilter;
+          const matchResponsible = task.responsible.toLowerCase().includes(responsibleFilter);
+
+          if (matchTitle && matchPriority && matchResponsible) {
+            li.style.display = '';
+          } else {
+            li.style.display = 'none';
+          }
+        }
+      }
     }
 
-    // Métricas básicas
+    // Métricas simples
     function updateMetrics() {
       const total = tasks.length;
-      const todoCount = tasks.filter(t => t.status === 'todo').length;
-      const inProgressCount = tasks.filter(t => t.status === 'in-progress').length;
-      const doneCount = tasks.filter(t => t.status === 'done').length;
+      const byStatus = { todo: 0, 'in-progress': 0, done: 0 };
+      const byPriority = { Baixa: 0, Média: 0, Alta: 0 };
+
+      tasks.forEach(t => {
+        if (byStatus[t.status] !== undefined) byStatus[t.status]++;
+        if (byPriority[t.priority] !== undefined) byPriority[t.priority]++;
+      });
 
       const metricsDiv = document.getElementById('metrics');
       metricsDiv.innerHTML = `
-        Total de tarefas: ${total} <br />
-        A Fazer: ${todoCount} <br />
-        Em Progresso: ${inProgressCount} <br />
-        Concluído: ${doneCount}
+        Total de tarefas: <b>${total}</b><br/>
+        A Fazer: <b>${byStatus.todo}</b> | Em Progresso: <b>${byStatus['in-progress']}</b> | Concluído: <b>${byStatus.done}</b><br/>
+        Prioridade - Baixa: <b>${byPriority.Baixa}</b>, Média: <b>${byPriority.Média}</b>, Alta: <b>${byPriority.Alta}</b>
       `;
     }
 
@@ -285,16 +311,21 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          tasks = JSON.parse(e.target.result);
-          saveTasks();
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            tasks = imported;
+            saveTasks();
+          } else {
+            alert('Arquivo JSON inválido.');
+          }
         } catch (error) {
-          alert('Arquivo JSON inválido.');
+          alert('Erro ao ler arquivo JSON.');
         }
       };
       reader.readAsText(file);
     }
 
-    // Inicializa
+    // Inicialização
     renderTasks();
     updateMetrics();
   </script>
