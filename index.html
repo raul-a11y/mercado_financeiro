@@ -66,6 +66,7 @@
       const data = ev.dataTransfer.getData("text");
       const task = document.getElementById(data);
       ev.currentTarget.appendChild(task);
+      saveBoard();
     }
 
     function addTask() {
@@ -73,16 +74,86 @@
       const value = input.value.trim();
       if (!value) return;
 
-      const task = document.createElement('li');
-      task.textContent = value;
-      task.className = 'p-2 bg-gray-100 rounded cursor-move';
-      task.id = 'task-' + taskId++;
-      task.draggable = true;
-      task.ondragstart = drag;
-
+      const task = createTaskElement(value);
       document.getElementById('todo').appendChild(task);
       input.value = '';
+      saveBoard();
     }
+
+    function createTaskElement(text, id = null) {
+      const li = document.createElement('li');
+      const taskIdString = id || 'task-' + taskId++;
+      li.id = taskIdString;
+      li.draggable = true;
+      li.ondragstart = drag;
+      li.className = 'p-2 bg-gray-100 rounded cursor-move flex justify-between items-center';
+
+      const span = document.createElement('span');
+      span.textContent = text;
+      span.className = 'flex-1';
+
+      const actions = document.createElement('div');
+      actions.className = 'flex gap-2 ml-2';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = '✏️';
+      editBtn.onclick = () => {
+        const newText = prompt('Editar tarefa:', span.textContent);
+        if (newText !== null) {
+          span.textContent = newText;
+          saveBoard();
+        }
+      };
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '❌';
+      delBtn.onclick = () => {
+        li.remove();
+        saveBoard();
+      };
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      li.appendChild(span);
+      li.appendChild(actions);
+
+      return li;
+    }
+
+    function saveBoard() {
+      const columns = ['todo', 'in-progress', 'done'];
+      const data = {};
+
+      columns.forEach(col => {
+        const ul = document.getElementById(col);
+        const tasks = [];
+        ul.querySelectorAll('li').forEach(task => {
+          const text = task.querySelector('span').textContent;
+          tasks.push({ id: task.id, text });
+        });
+        data[col] = tasks;
+      });
+
+      localStorage.setItem('kanbanBoard', JSON.stringify(data));
+    }
+
+    function loadBoard() {
+      const saved = localStorage.getItem('kanbanBoard');
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      const columns = ['todo', 'in-progress', 'done'];
+
+      columns.forEach(col => {
+        const ul = document.getElementById(col);
+        ul.innerHTML = '';
+        data[col].forEach(taskData => {
+          const task = createTaskElement(taskData.text, taskData.id);
+          ul.appendChild(task);
+        });
+      });
+    }
+
+    window.onload = loadBoard;
   </script>
 </body>
 </html>
