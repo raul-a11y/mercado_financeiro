@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plataforma Financeira - Kanban</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
+    <h1 class="text-2xl font-bold mb-6">FinancePro</h1>
+    <nav class="flex-1">
+      <ul class="space-y-2">
+        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Dashboard</a></li>
+        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Kanban</a></li>
+        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Análise Técnica</a></li>
+        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Carteira</a></li>
+        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Alertas</a></li>
+        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Configurações</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 overflow-auto">
+    <h2 class="text-2xl font-semibold mb-4">Kanban - Tarefas do Mercado</h2>
+    <div class="grid grid-cols-3 gap-4">
+      <!-- To Do -->
+      <div class="bg-white rounded shadow p-4">
+        <h3 class="font-semibold text-lg mb-2">A Fazer</h3>
+        <ul class="space-y-2">
+          <li class="p-2 bg-gray-100 rounded">Analisar ações da semana</li>
+          <li class="p-2 bg-gray-100 rounded">Revisar carteira de investimentos</li>
+        </ul>
+      </div>
+
+      <!-- In Progress -->
+      <div class="bg-white rounded shadow p-4">
+        <h3 class="font-semibold text-lg mb-2">Em Progresso</h3>
+        <ul class="space-y-2">
+          <li class="p-2 bg-yellow-100 rounded">Monitorando gráficos intraday</li>
+        </ul>
+      </div>
+
+      <!-- Done -->
+      <div class="bg-white rounded shadow p-4">
+        <h3 class="font-semibold text-lg mb-2">Concluído</h3>
+        <ul class="space-y-2">
+          <li class="p-2 bg-green-100 rounded">Configuração inicial da carteira</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
