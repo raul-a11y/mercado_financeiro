@@ -92,7 +92,7 @@
       span.textContent = text;
       span.className = 'flex-1';
 
-      span.onclick = () => changeStatus(li);
+      span.onclick = () => openStatusMenu(li);
 
       const actions = document.createElement('div');
       actions.className = 'flex gap-2 ml-2';
@@ -122,13 +122,15 @@
       return li;
     }
 
-    function changeStatus(task) {
-      const currentColumn = task.parentElement.id;
-      const columns = ['todo', 'in-progress', 'done'];
-      const index = columns.indexOf(currentColumn);
-      const nextColumn = columns[(index + 1) % columns.length];
-      document.getElementById(nextColumn).appendChild(task);
-      saveBoard();
+    function openStatusMenu(task) {
+      const status = prompt("Mover para:", "todo, in-progress, done");
+      const valid = ['todo', 'in-progress', 'done'];
+      if (valid.includes(status)) {
+        document.getElementById(status).appendChild(task);
+        saveBoard();
+      } else {
+        alert("Opção inválida. Use: todo, in-progress ou done");
+      }
     }
 
     function saveBoard() {
