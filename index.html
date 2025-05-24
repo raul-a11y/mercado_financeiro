@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plataforma Financeira - Kanban</title>
+  <title>Kanban Dinâmico - FinancePro</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .dragging {
+      opacity: 0.5;
+    }
+  </style>
 </head>
 <body class="flex h-screen bg-gray-100">
   <!-- Sidebar -->
@@ -14,43 +19,70 @@
       <ul class="space-y-2">
         <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Dashboard</a></li>
         <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Kanban</a></li>
-        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Análise Técnica</a></li>
         <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Carteira</a></li>
         <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Alertas</a></li>
-        <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Configurações</a></li>
       </ul>
     </nav>
   </aside>
 
-  <!-- Main content -->
+  <!-- Main -->
   <main class="flex-1 p-6 overflow-auto">
     <h2 class="text-2xl font-semibold mb-4">Kanban - Tarefas do Mercado</h2>
+    <div class="mb-4 flex gap-2">
+      <input id="new-task" type="text" placeholder="Nova tarefa..." class="flex-1 p-2 border rounded" />
+      <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded">Adicionar</button>
+    </div>
+
     <div class="grid grid-cols-3 gap-4">
-      <!-- To Do -->
+      <!-- Columns -->
       <div class="bg-white rounded shadow p-4">
         <h3 class="font-semibold text-lg mb-2">A Fazer</h3>
-        <ul class="space-y-2">
-          <li class="p-2 bg-gray-100 rounded">Analisar ações da semana</li>
-          <li class="p-2 bg-gray-100 rounded">Revisar carteira de investimentos</li>
-        </ul>
+        <ul id="todo" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
       </div>
-
-      <!-- In Progress -->
       <div class="bg-white rounded shadow p-4">
         <h3 class="font-semibold text-lg mb-2">Em Progresso</h3>
-        <ul class="space-y-2">
-          <li class="p-2 bg-yellow-100 rounded">Monitorando gráficos intraday</li>
-        </ul>
+        <ul id="in-progress" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
       </div>
-
-      <!-- Done -->
       <div class="bg-white rounded shadow p-4">
         <h3 class="font-semibold text-lg mb-2">Concluído</h3>
-        <ul class="space-y-2">
-          <li class="p-2 bg-green-100 rounded">Configuração inicial da carteira</li>
-        </ul>
+        <ul id="done" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
       </div>
     </div>
   </main>
+
+  <script>
+    let taskId = 0;
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const task = document.getElementById(data);
+      ev.currentTarget.appendChild(task);
+    }
+
+    function addTask() {
+      const input = document.getElementById('new-task');
+      const value = input.value.trim();
+      if (!value) return;
+
+      const task = document.createElement('li');
+      task.textContent = value;
+      task.className = 'p-2 bg-gray-100 rounded cursor-move';
+      task.id = 'task-' + taskId++;
+      task.draggable = true;
+      task.ondragstart = drag;
+
+      document.getElementById('todo').appendChild(task);
+      input.value = '';
+    }
+  </script>
 </body>
 </html>
