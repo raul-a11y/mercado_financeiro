@@ -1,665 +1,852 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Plataforma Financeira - Kanban</title>
-<style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    display: flex;
-    height: 100vh;
-    background: #f5f5f5;
-  }
-  /* Sidebar lateral */
-  #sidebar {
-    width: 220px;
-    background-color: #2c3e50;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    padding: 1rem;
-  }
-  #sidebar h2 {
-    margin-top: 0;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-  #sidebar nav a {
-    color: white;
-    text-decoration: none;
-    padding: 0.7rem 1rem;
-    margin-bottom: 0.5rem;
-    border-radius: 4px;
-    display: block;
-    transition: background-color 0.3s ease;
-    cursor: pointer;
-  }
-  #sidebar nav a:hover,
-  #sidebar nav a.active {
-    background-color: #34495e;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kanban Financeiro</title>
+  <style>
+    :root {
+      --sidebar-width: 220px;
+      --header-height: 50px;
+    }
+    body {
+      margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; overflow: hidden;
+      background: #f0f2f5;
+      color: #222;
+    }
+    /* Sidebar lateral */
+    #sidebar {
+      width: var(--sidebar-width);
+      background: #24292e;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 8px;
+    }
+    #sidebar h2 {
+      margin: 0 0 12px;
+      font-weight: normal;
+      font-size: 1.3rem;
+      text-align: center;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+    }
+    #sidebar nav a {
+      color: #bbb;
+      text-decoration: none;
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      display: block;
+      font-size: 1rem;
+      transition: background 0.3s;
+    }
+    #sidebar nav a:hover {
+      background: #0366d6;
+      color: white;
+    }
 
-  main {
-    flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
+    /* Área principal */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 20px;
+      overflow: hidden;
+    }
 
-  /* Formulário externo para adicionar tarefa */
-  #task-add-form {
-    background: white;
-    padding: 1rem;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-    margin-bottom: 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  #task-add-form input[type="text"],
-  #task-add-form select {
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  #task-add-form input[type="text"] {
-    flex: 2 1 200px;
-  }
-  #task-add-form select {
-    flex: 1 1 150px;
-  }
-  #task-add-form button {
-    padding: 0.5rem 1rem;
-    background-color: #27ae60;
-    border: none;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px;
-    flex: 0 0 auto;
-  }
-  #task-add-form button:hover {
-    background-color: #219150;
-  }
+    header {
+      height: var(--header-height);
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-right: 10px;
+    }
+    header h1 {
+      font-weight: normal;
+      font-size: 1.5rem;
+      margin: 0;
+    }
 
-  /* Filtros */
-  #filters {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  #filters input[type="text"],
-  #filters select {
-    padding: 0.5rem;
-    font-size: 1rem;
-    flex: 1;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
+    /* Filtros */
+    #filters {
+      display: flex;
+      gap: 16px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+    #filters input[type=text], #filters select {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #aaa;
+      font-size: 1rem;
+    }
+    #filters label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.85rem;
+      color: #555;
+    }
 
-  /* Container das colunas do kanban */
-  #columns-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-    padding: 1rem 0;
-    overflow-x: auto;
-  }
+    /* Container das colunas */
+    #columns-container {
+      flex: 1;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 280px;
+      gap: 18px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      scroll-behavior: smooth;
+    }
 
-  /* Cada coluna */
-  .column {
-    background: white;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-    display: flex;
-    flex-direction: column;
-    max-height: 80vh;
-  }
+    /* Coluna */
+    .column {
+      background: white;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      border: 3px solid var(--column-color, #2196F3);
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+    }
+    .column-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      gap: 6px;
+    }
+    .column-header input[type=text] {
+      flex: 1;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 4px 6px;
+      outline-offset: 2px;
+      background: transparent;
+      color: #222;
+    }
+    .column-header input[type=text]:focus {
+      border-color: var(--column-color, #2196F3);
+      background: #fafafa;
+    }
+    .icon-display {
+      font-size: 1.4rem;
+      user-select: none;
+      min-width: 24px;
+      text-align: center;
+    }
+    .edit-column-btn, .remove-column-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      user-select: none;
+      color: #555;
+      padding: 0 6px;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    .edit-column-btn:hover {
+      color: #000;
+      background: #ddd;
+    }
+    .remove-column-btn:hover {
+      color: #900;
+      background: #fdd;
+    }
 
-  /* Header da coluna com input para editar nome e botão remover */
-  .column-header {
-    background-color: #2980b9;
-    padding: 0.5rem;
-    color: white;
-    font-weight: bold;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .column-header input[type="text"] {
-    flex: 1;
-    font-weight: bold;
-    font-size: 1.1rem;
-    border: none;
-    background: transparent;
-    color: white;
-    cursor: text;
-  }
-  .column-header input[type="text"]:focus {
-    outline: 2px solid #fff;
-    background: rgba(255,255,255,0.2);
-    border-radius: 4px;
-  }
-  .remove-column-btn {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0 0.3rem;
-    transition: color 0.3s ease;
-  }
-  .remove-column-btn:hover {
-    color: #e74c3c;
-  }
+    /* Lista de tarefas */
+    .task-list {
+      flex: 1;
+      list-style: none;
+      margin: 0;
+      padding: 8px 10px;
+      overflow-y: auto;
+      min-height: 80px;
+    }
+    .task-list li {
+      background: #fafafa;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+      border-left: 6px solid transparent;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+    .task-list li.dragging {
+      opacity: 0.6;
+    }
+    .task-list li:hover {
+      background: #f0f4ff;
+    }
 
-  /* Lista de tarefas */
-  .task-list {
-    list-style: none;
-    margin: 0;
-    padding: 0.5rem;
-    flex: 1;
-    overflow-y: auto;
-  }
+    /* Prioridades */
+    .high-priority { border-left-color: #e53935; }
+    .medium-priority { border-left-color: #fb8c00; }
+    .low-priority { border-left-color: #43a047; }
 
-  /* Item da tarefa */
-  .task-list li {
-    background: #ecf0f1;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-    user-select: none;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
-  }
-  .task-list li.high-priority {
-    border-left: 5px solid #e74c3c;
-  }
-  .task-list li.medium-priority {
-    border-left: 5px solid #f39c12;
-  }
-  .task-list li.low-priority {
-    border-left: 5px solid #27ae60;
-  }
-  .task-list li.dragging {
-    opacity: 0.5;
-  }
+    /* Modal genérico */
+    .modal {
+      position: fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content:center;
+      align-items:center;
+      z-index: 3000;
+      padding: 10px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px 24px;
+      border-radius: 8px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 4px 10px rgb(0 0 0 / 0.2);
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #222;
+    }
+    .modal-content label {
+      display: block;
+      margin: 10px 0 4px;
+      font-weight: 500;
+      color: #444;
+    }
+    .modal-content input[type=text],
+    .modal-content select,
+    .modal-content input[type=color] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .modal-buttons {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .save-btn, .cancel-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      user-select: none;
+    }
+    .save-btn {
+      background-color: #2196F3;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    .save-btn:hover {
+      background-color: #1976d2;
+    }
+    .cancel-btn {
+      background-color: #ccc;
+      color: #444;
+    }
+    .cancel-btn:hover {
+      background-color: #aaa;
+      color: white;
+    }
 
-  /* Botão adicionar etapa */
-  #add-column-btn {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    background-color: #2980b9;
-    border: none;
-    color: white;
-    border-radius: 6px;
-    align-self: flex-start;
-  }
-  #add-column-btn:hover {
-    background-color: #2071b7;
-  }
+    /* Form adicionar tarefa externa */
+    #add-task-section {
+      background: white;
+      padding: 12px 18px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      margin-bottom: 12px;
+      max-width: 650px;
+    }
+    #add-task-section form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    #add-task-section label {
+      font-size: 0.9rem;
+      color: #333;
+    }
+    #add-task-section input[type=text],
+    #add-task-section select {
+      padding: 6px 8px;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      min-width: 140px;
+    }
+    #add-task-section button {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #add-task-section button:hover {
+      background: #1976d2;
+    }
 
-  /* Métricas: estilo antigo */
-  #metrics {
-    margin-top: 1rem;
-    font-size: 1rem;
-    color: #333;
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  #metrics > div {
-    background: #fff;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    box-shadow: 0 1px 4px rgb(0 0 0 / 0.1);
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-  #metrics > div span.icon {
-    font-size: 1.3rem;
-  }
+    /* Métricas */
+    #metrics {
+      background: white;
+      margin-top: 14px;
+      padding: 14px 18px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      max-width: 650px;
+      font-size: 0.95rem;
+      color: #222;
+    }
+    #metrics h3 {
+      margin-top: 0;
+      font-weight: 600;
+    }
+    #metrics div.metric {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #metrics div.metric .icon {
+      font-size: 1.3rem;
+      user-select: none;
+    }
 
-  /* Modal edição tarefa */
-  #edit-task-modal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-  }
-  #edit-task-modal.active {
-    display: flex;
-  }
-  #edit-task-modal .modal-content {
-    background: white;
-    border-radius: 6px;
-    padding: 1.5rem;
-    width: 320px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-    display: flex;
-    flex-direction: column;
-  }
-  #edit-task-modal label {
-    margin-top: 0.8rem;
-    font-weight: bold;
-  }
-  #edit-task-modal input[type="text"],
-  #edit-task-modal select {
-    margin-top: 0.3rem;
-    padding: 0.4rem 0.6rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    width: 100%;
-  }
-  #edit-task-modal .modal-buttons {
-    margin-top: 1.2rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
-  #edit-task-modal button {
-    padding: 0.5rem 1rem;
-    font-weight: bold;
-    border-radius: 4px;
-    cursor: pointer;
-    border: none;
-  }
-  #edit-task-modal .save-btn {
-    background-color: #27ae60;
-    color: white;
-  }
-  #edit-task-modal .save-btn:hover {
-    background-color: #219150;
-  }
-  #edit-task-modal .cancel-btn {
-    background-color: #bdc3c7;
-    color: #2c3e50;
-  }
-  #edit-task-modal .cancel-btn:hover {
-    background-color: #95a5a6;
-  }
-</style>
+  </style>
 </head>
 <body>
 
-<div id="sidebar">
-  <h2>Plataforma Financeira</h2>
-  <nav>
-    <a href="#" data-module="dashboard" class="active">Dashboard</a>
-    <a href="#" data-module="relatorios">Relatórios</a>
-    <a href="#" data-module="configuracoes">Configurações</a>
-  </nav>
-</div>
+  <!-- Sidebar lateral -->
+  <aside id="sidebar">
+    <h2>Menu</h2>
+    <nav>
+      <a href="#">Dashboard</a>
+      <a href="#">Análises</a>
+      <a href="#">Portfólio</a>
+      <a href="#">Kanban</a>
+      <a href="#">Configurações</a>
+    </nav>
+  </aside>
 
-<main>
-  <form id="task-add-form">
-    <input type="text" id="new-task-title" placeholder="Título da nova tarefa" required />
-    <select id="new-task-priority">
-      <option value="high">Alta Prioridade</option>
-      <option value="medium" selected>Média Prioridade</option>
-      <option value="low">Baixa Prioridade</option>
-    </select>
-    <input type="text" id="new-task-responsible" placeholder="Responsável" />
-    <select id="new-task-status" required>
-      <!-- Opções dinâmicas -->
-    </select>
-    <button type="submit">Adicionar Tarefa</button>
-  </form>
+  <!-- Principal -->
+  <div id="main">
 
-  <div id="filters">
-    <input type="text" id="filter-title" placeholder="Filtrar por título" />
-    <select id="filter-priority">
-      <option value="">Todas prioridades</option>
-      <option value="high">Alta Prioridade</option>
-      <option value="medium">Média Prioridade</option>
-      <option value="low">Baixa Prioridade</option>
-    </select>
-    <input type="text" id="filter-responsible" placeholder="Filtrar por responsável" />
+    <header>
+      <h1>Kanban Financeiro</h1>
+      <button id="add-column-btn" title="Adicionar nova etapa">➕ Nova Etapa</button>
+    </header>
+
+    <!-- Filtros -->
+    <section id="filters">
+      <label>Filtrar por título:
+        <input type="text" id="filter-title" placeholder="Buscar tarefa..." />
+      </label>
+      <label>Prioridade:
+        <select id="filter-priority">
+          <option value="">Todas</option>
+          <option value="high">Alta</option>
+          <option value="medium">Média</option>
+          <option value="low">Baixa</option>
+        </select>
+      </label>
+      <label>Responsável:
+        <input type="text" id="filter-responsible" placeholder="Nome do responsável..." />
+      </label>
+    </section>
+
+    <!-- Form adicionar tarefa externo -->
+    <section id="add-task-section">
+      <form id="task-add-form">
+        <label>
+          Título:
+          <input type="text" id="new-task-title" required />
+        </label>
+        <label>
+          Prioridade:
+          <select id="new-task-priority">
+            <option value="high">Alta</option>
+            <option value="medium" selected>Média</option>
+            <option value="low">Baixa</option>
+          </select>
+        </label>
+        <label>
+          Responsável:
+          <input type="text" id="new-task-responsible" />
+        </label>
+        <label>
+          Etapa:
+          <select id="new-task-status"></select>
+        </label>
+        <button type="submit">Adicionar</button>
+      </form>
+    </section>
+
+    <!-- Kanban colunas -->
+    <section id="columns-container"></section>
+
+    <!-- Métricas -->
+    <section id="metrics">
+      <h3>Métricas</h3>
+      <!-- Dinâmico -->
+    </section>
+
   </div>
 
-  <div id="columns-container"></div>
-
-  <button id="add-column-btn" title="Adicionar nova etapa">+ Adicionar Etapa</button>
-
-  <div id="metrics"></div>
-</main>
-
-<!-- Modal para editar tarefa -->
-<div id="edit-task-modal">
-  <div class="modal-content">
-    <h3>Editar Tarefa</h3>
-    <form id="edit-task-form">
-      <label for="edit-task-title">Título:</label>
-      <input type="text" id="edit-task-title" required />
-
-      <label for="edit-task-priority">Prioridade:</label>
-      <select id="edit-task-priority" required>
-        <option value="high">Alta Prioridade</option>
-        <option value="medium">Média Prioridade</option>
-        <option value="low">Baixa Prioridade</option>
-      </select>
-
-      <label for="edit-task-responsible">Responsável:</label>
-      <input type="text" id="edit-task-responsible" />
-
-      <label for="edit-task-status">Etapa:</label>
-      <select id="edit-task-status" required>
-        <!-- Opções dinâmicas -->
-      </select>
-
-      <div class="modal-buttons">
-        <button type="submit" class="save-btn">Salvar</button>
-        <button type="button" class="cancel-btn" id="cancel-edit-task">Cancelar</button>
-      </div>
-    </form>
+  <!-- Modal editar tarefa -->
+  <div id="edit-task-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-task-title-label">
+    <div class="modal-content">
+      <h3 id="edit-task-title-label">Editar tarefa</h3>
+      <form id="edit-task-form">
+        <label>Título:
+          <input type="text" id="edit-task-title" required />
+        </label>
+        <label>Prioridade:
+          <select id="edit-task-priority">
+            <option value="high">Alta</option>
+            <option value="medium">Média</option>
+            <option value="low">Baixa</option>
+          </select>
+        </label>
+        <label>Responsável:
+          <input type="text" id="edit-task-responsible" />
+        </label>
+        <div class="modal-buttons">
+          <button type="submit" class="save-btn">Salvar</button>
+          <button type="button" class="cancel-btn" id="edit-task-cancel">Cancelar</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
-<script>
-  let columns = [
-    { id: 'todo', name: 'A Fazer' },
-    { id: 'inprogress', name: 'Em Progresso' },
-    { id: 'done', name: 'Concluído' }
-  ];
+  <!-- Modal editar etapa -->
+  <div id="edit-column-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-column-title-label">
+    <div class="modal-content">
+      <h3 id="edit-column-title-label">Editar etapa</h3>
+      <form id="edit-column-form">
+        <label>Nome da etapa:
+          <input type="text" id="edit-column-name" required />
+        </label>
+        <label>Cor da borda:
+          <input type="color" id="edit-column-color" value="#2196F3" />
+        </label>
+        <label>Ícone (emoji ou símbolo):
+          <input type="text" id="edit-column-icon" maxlength="2" placeholder="Ex: 🏦" />
+        </label>
+        <div class="modal-buttons">
+          <button type="submit" class="save-btn">Salvar</button>
+          <button type="button" class="cancel-btn" id="edit-column-cancel">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-  let tasks = [
-    { id: 1, title: 'Comprar ações', priority: 'high', responsible: 'Ana', status: 'todo' },
-    { id: 2, title: 'Analisar gráfico', priority: 'medium', responsible: 'Bruno', status: 'inprogress' },
-    { id: 3, title: 'Revisar portfólio', priority: 'low', responsible: 'Carlos', status: 'done' }
-  ];
+  <script>
+    // Dados do Kanban (carregados do localStorage)
+    let kanbanData = {
+      columns: [],
+      tasks: []
+    };
 
-  function saveData() {
-    localStorage.setItem('kanban-columns', JSON.stringify(columns));
-    localStorage.setItem('kanban-tasks', JSON.stringify(tasks));
-  }
-  function loadData() {
-    const storedColumns = localStorage.getItem('kanban-columns');
-    const storedTasks = localStorage.getItem('kanban-tasks');
-    if (storedColumns) columns = JSON.parse(storedColumns);
-    if (storedTasks) tasks = JSON.parse(storedTasks);
-  }
+    // Elementos DOM
+    const columnsContainer = document.getElementById('columns-container');
+    const addColumnBtn = document.getElementById('add-column-btn');
+    const filterTitle = document.getElementById('filter-title');
+    const filterPriority = document.getElementById('filter-priority');
+    const filterResponsible = document.getElementById('filter-responsible');
+    const newTaskForm = document.getElementById('task-add-form');
+    const newTaskTitle = document.getElementById('new-task-title');
+    const newTaskPriority = document.getElementById('new-task-priority');
+    const newTaskResponsible = document.getElementById('new-task-responsible');
+    const newTaskStatus = document.getElementById('new-task-status');
+    const metricsSection = document.getElementById('metrics');
 
-  // Sidebar links
-  document.querySelectorAll('#sidebar nav a').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      document.querySelectorAll('#sidebar nav a').forEach(l => l.classList.remove('active'));
-      e.target.classList.add('active');
-      alert('Módulo: ' + e.target.dataset.module);
-    });
-  });
+    // Modal editar tarefa
+    const editTaskModal = document.getElementById('edit-task-modal');
+    const editTaskForm = document.getElementById('edit-task-form');
+    const editTaskTitleInput = document.getElementById('edit-task-title');
+    const editTaskPriorityInput = document.getElementById('edit-task-priority');
+    const editTaskResponsibleInput = document.getElementById('edit-task-responsible');
+    const editTaskCancelBtn = document.getElementById('edit-task-cancel');
 
-  // Atualiza opções status para selects do formulário e edição
-  function updateStatusOptions() {
-    const selects = [document.getElementById('new-task-status'), document.getElementById('edit-task-status')];
-    selects.forEach(select => {
-      select.innerHTML = '';
-      columns.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        select.appendChild(opt);
-      });
-    });
-  }
+    // Modal editar coluna
+    const editColumnModal = document.getElementById('edit-column-modal');
+    const editColumnForm = document.getElementById('edit-column-form');
+    const editColumnNameInput = document.getElementById('edit-column-name');
+    const editColumnColorInput = document.getElementById('edit-column-color');
+    const editColumnIconInput = document.getElementById('edit-column-icon');
+    const editColumnCancelBtn = document.getElementById('edit-column-cancel');
 
-  // Render colunas e tarefas
-  function renderColumns() {
-    const container = document.getElementById('columns-container');
-    container.innerHTML = '';
+    // Estado temporário para edição
+    let editingTaskId = null;
+    let editingColumnId = null;
+    let draggedTaskId = null;
 
-    // filtros
-    const filterTitle = document.getElementById('filter-title').value.toLowerCase();
-    const filterPriority = document.getElementById('filter-priority').value;
-    const filterResponsible = document.getElementById('filter-responsible').value.toLowerCase();
+    // Função para gerar ID único simples
+    function generateId() {
+      return '_' + Math.random().toString(36).substr(2, 9);
+    }
 
-    columns.forEach(col => {
-      const columnEl = document.createElement('div');
-      columnEl.className = 'column';
-      columnEl.dataset.id = col.id;
-
-      // Header com input para editar nome e botão remover
-      const header = document.createElement('div');
-      header.className = 'column-header';
-
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = col.name;
-      input.title = "Editar nome da etapa";
-      input.addEventListener('blur', () => {
-        const newName = input.value.trim();
-        if (!newName) {
-          alert('Nome inválido');
-          input.value = col.name;
-          return;
-        }
-        col.name = newName;
+    // Salvar e carregar do localStorage
+    function saveData() {
+      localStorage.setItem('kanbanData', JSON.stringify(kanbanData));
+    }
+    function loadData() {
+      const data = localStorage.getItem('kanbanData');
+      if (data) {
+        kanbanData = JSON.parse(data);
+      } else {
+        // Dados iniciais padrão se não existir nada
+        kanbanData = {
+          columns: [
+            { id: generateId(), name: 'A Fazer', color: '#2196F3', icon: '📝' },
+            { id: generateId(), name: 'Fazendo', color: '#FB8C00', icon: '⏳' },
+            { id: generateId(), name: 'Concluído', color: '#43A047', icon: '✅' }
+          ],
+          tasks: []
+        };
         saveData();
-        updateStatusOptions();
-        renderMetrics();
+      }
+    }
+
+    // Atualizar select para status de tarefa
+    function updateStatusSelectOptions() {
+      const cols = kanbanData.columns;
+      newTaskStatus.innerHTML = '';
+      cols.forEach(col => {
+        const opt = document.createElement('option');
+        opt.value = col.id;
+        opt.textContent = col.name;
+        newTaskStatus.appendChild(opt);
       });
-      header.appendChild(input);
+      if (cols.length) newTaskStatus.value = cols[0].id;
+    }
 
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'remove-column-btn';
-      removeBtn.title = "Remover etapa";
-      removeBtn.innerHTML = '✖';
-      removeBtn.addEventListener('click', () => {
-        if(confirm(`Remover etapa "${col.name}"?`)){
-          columns = columns.filter(c => c.id !== col.id);
-          tasks = tasks.filter(t => t.status !== col.id);
-          saveData();
-          updateStatusOptions();
-          renderColumns();
-          renderMetrics();
-        }
-      });
-      header.appendChild(removeBtn);
+    // Renderizar colunas e tarefas (com filtros)
+    function renderKanban() {
+      columnsContainer.innerHTML = '';
 
-      columnEl.appendChild(header);
+      const filterT = filterTitle.value.toLowerCase();
+      const filterP = filterPriority.value;
+      const filterR = filterResponsible.value.toLowerCase();
 
-      const ul = document.createElement('ul');
-      ul.className = 'task-list';
-      ul.dataset.status = col.id;
+      kanbanData.columns.forEach(col => {
+        const colDiv = document.createElement('div');
+        colDiv.classList.add('column');
+        colDiv.style.setProperty('--column-color', col.color);
+        colDiv.dataset.columnId = col.id;
 
-      // tarefas filtradas
-      tasks
-        .filter(t => t.status === col.id)
-        .filter(t => t.title.toLowerCase().includes(filterTitle))
-        .filter(t => !filterPriority || t.priority === filterPriority)
-        .filter(t => t.responsible.toLowerCase().includes(filterResponsible))
-        .forEach(task => {
+        // Header com nome editável e botões
+        const header = document.createElement('div');
+        header.className = 'column-header';
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'icon-display';
+        iconSpan.textContent = col.icon || '📌';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = col.name;
+        nameInput.title = 'Editar nome da etapa (Enter para salvar)';
+        nameInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const newName = nameInput.value.trim();
+            if (newName) {
+              col.name = newName;
+              saveData();
+              updateStatusSelectOptions();
+              renderKanban();
+            }
+          }
+        });
+        nameInput.addEventListener('blur', () => {
+          // Atualiza o nome ao perder foco também
+          const newName = nameInput.value.trim();
+          if (newName && newName !== col.name) {
+            col.name = newName;
+            saveData();
+            updateStatusSelectOptions();
+            renderKanban();
+          }
+        });
+
+        // Botão editar coluna abre modal
+        const editColBtn = document.createElement('button');
+        editColBtn.className = 'edit-column-btn';
+        editColBtn.title = 'Editar etapa';
+        editColBtn.textContent = '✏️';
+        editColBtn.addEventListener('click', () => openEditColumnModal(col.id));
+
+        // Botão remover coluna
+        const removeColBtn = document.createElement('button');
+        removeColBtn.className = 'remove-column-btn';
+        removeColBtn.title = 'Remover etapa e tarefas';
+        removeColBtn.textContent = '🗑️';
+        removeColBtn.addEventListener('click', () => {
+          if (confirm(`Remover a etapa "${col.name}" e todas as tarefas nela?`)) {
+            // Remove as tarefas dessa coluna
+            kanbanData.tasks = kanbanData.tasks.filter(t => t.status !== col.id);
+            // Remove a coluna
+            kanbanData.columns = kanbanData.columns.filter(c => c.id !== col.id);
+            saveData();
+            updateStatusSelectOptions();
+            renderKanban();
+          }
+        });
+
+        header.appendChild(iconSpan);
+        header.appendChild(nameInput);
+        header.appendChild(editColBtn);
+        header.appendChild(removeColBtn);
+        colDiv.appendChild(header);
+
+        // Lista de tarefas
+        const ul = document.createElement('ul');
+        ul.className = 'task-list';
+        ul.dataset.columnId = col.id;
+        ul.addEventListener('dragover', e => {
+          e.preventDefault();
+          const draggingTask = document.querySelector('.dragging');
+          if (draggingTask && ul !== draggingTask.parentElement) {
+            ul.appendChild(draggingTask);
+          }
+        });
+        ul.addEventListener('drop', e => {
+          e.preventDefault();
+          if (draggedTaskId) {
+            const task = kanbanData.tasks.find(t => t.id === draggedTaskId);
+            if (task) {
+              task.status = col.id;
+              saveData();
+              renderKanban();
+            }
+            draggedTaskId = null;
+          }
+        });
+
+        // Filtrar tarefas da coluna
+        const filteredTasks = kanbanData.tasks.filter(task => {
+          return task.status === col.id &&
+            (filterT === '' || task.title.toLowerCase().includes(filterT)) &&
+            (filterP === '' || task.priority === filterP) &&
+            (filterR === '' || (task.responsible || '').toLowerCase().includes(filterR));
+        });
+
+        filteredTasks.forEach(task => {
           const li = document.createElement('li');
-          li.textContent = task.title + (task.responsible ? ` (🧑‍💼 ${task.responsible})` : '');
-          li.className = `${task.priority}-priority`;
-          li.draggable = true;
-          li.dataset.id = task.id;
+          li.textContent = task.title;
+          li.classList.add(`${task.priority}-priority`);
+          li.setAttribute('draggable', 'true');
+          li.dataset.taskId = task.id;
+          li.title = `Prioridade: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}\nResponsável: ${task.responsible || 'N/A'}`;
 
-          // Drag events
-          li.addEventListener('dragstart', (e) => {
+          li.addEventListener('dragstart', () => {
             li.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', task.id);
+            draggedTaskId = task.id;
           });
           li.addEventListener('dragend', () => {
             li.classList.remove('dragging');
           });
 
-          // Clicar abre modal editar
-          li.addEventListener('click', () => {
-            openEditModal(task.id);
-          });
+          li.addEventListener('click', () => openEditTaskModal(task.id));
 
           ul.appendChild(li);
         });
 
-      // Drop events para coluna
-      ul.addEventListener('dragover', (e) => e.preventDefault());
-      ul.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const id = e.dataTransfer.getData('text/plain');
-        const task = tasks.find(t => t.id == id);
-        if(task) {
-          task.status = col.id;
-          saveData();
-          renderColumns();
-          renderMetrics();
-        }
+        colDiv.appendChild(ul);
+        columnsContainer.appendChild(colDiv);
       });
 
-      columnEl.appendChild(ul);
-      container.appendChild(columnEl);
-    });
-  }
-
-  // Render métricas com ícones
-  function renderMetrics() {
-    const metricsDiv = document.getElementById('metrics');
-    metricsDiv.innerHTML = '';
-
-    const totalTasks = tasks.length;
-
-    const icons = {
-      todo: '📝',
-      inprogress: '⏳',
-      done: '✔️'
-    };
-
-    const totalDiv = document.createElement('div');
-    totalDiv.innerHTML = `<span class="icon">📊</span> Total de Tarefas: <strong>${totalTasks}</strong>`;
-    metricsDiv.appendChild(totalDiv);
-
-    columns.forEach(col => {
-      const count = tasks.filter(t => t.status === col.id).length;
-      const icon = icons[col.id] || '📌';
-
-      const div = document.createElement('div');
-      div.innerHTML = `<span class="icon">${icon}</span> ${col.name}: <strong>${count}</strong>`;
-      metricsDiv.appendChild(div);
-    });
-  }
-
-  // Adicionar nova tarefa (form externo)
-  document.getElementById('task-add-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const title = document.getElementById('new-task-title').value.trim();
-    const priority = document.getElementById('new-task-priority').value;
-    const responsible = document.getElementById('new-task-responsible').value.trim();
-    const status = document.getElementById('new-task-status').value;
-
-    if(!title) {
-      alert('Título é obrigatório');
-      return;
+      updateMetrics();
     }
 
-    const newTask = {
-      id: Date.now(),
-      title,
-      priority,
-      responsible,
-      status
-    };
-    tasks.push(newTask);
-    saveData();
+    // Abrir modal editar tarefa
+    function openEditTaskModal(taskId) {
+      editingTaskId = taskId;
+      const task = kanbanData.tasks.find(t => t.id === taskId);
+      if (!task) return;
 
-    e.target.reset();
-    renderColumns();
-    renderMetrics();
-  });
+      editTaskTitleInput.value = task.title;
+      editTaskPriorityInput.value = task.priority;
+      editTaskResponsibleInput.value = task.responsible || '';
 
-  // Adicionar nova etapa
-  document.getElementById('add-column-btn').addEventListener('click', () => {
-    let newName = prompt('Nome da nova etapa:');
-    if(newName) {
-      newName = newName.trim();
-      if(!newName) {
-        alert('Nome inválido');
-        return;
-      }
-      // Cria id simples baseado no nome
-      let newId = newName.toLowerCase().replace(/\s+/g, '-');
-      // Evitar conflito
-      if(columns.find(c => c.id === newId)) {
-        newId += '-' + Math.floor(Math.random()*1000);
-      }
-      columns.push({ id: newId, name: newName });
+      editTaskModal.classList.add('active');
+      editTaskTitleInput.focus();
+    }
+
+    // Fechar modal editar tarefa
+    function closeEditTaskModal() {
+      editTaskModal.classList.remove('active');
+      editingTaskId = null;
+    }
+
+    // Abrir modal editar coluna
+    function openEditColumnModal(columnId) {
+      editingColumnId = columnId;
+      const col = kanbanData.columns.find(c => c.id === columnId);
+      if (!col) return;
+
+      editColumnNameInput.value = col.name;
+      editColumnColorInput.value = col.color || '#2196F3';
+      editColumnIconInput.value = col.icon || '';
+
+      editColumnModal.classList.add('active');
+      editColumnNameInput.focus();
+    }
+
+    // Fechar modal editar coluna
+    function closeEditColumnModal() {
+      editColumnModal.classList.remove('active');
+      editingColumnId = null;
+    }
+
+    // Atualizar métricas
+    function updateMetrics() {
+      const totalTasks = kanbanData.tasks.length;
+      const byPriority = { high: 0, medium: 0, low: 0 };
+      const byColumn = {};
+
+      kanbanData.columns.forEach(col => {
+        byColumn[col.id] = 0;
+      });
+
+      kanbanData.tasks.forEach(task => {
+        byPriority[task.priority] = (byPriority[task.priority] || 0) + 1;
+        byColumn[task.status] = (byColumn[task.status] || 0) + 1;
+      });
+
+      metricsSection.innerHTML = '<h3>Métricas</h3>';
+
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'metric';
+      totalDiv.innerHTML = `<span class="icon">📋</span> Total de tarefas: <strong>${totalTasks}</strong>`;
+      metricsSection.appendChild(totalDiv);
+
+      // Prioridades
+      ['high', 'medium', 'low'].forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'metric';
+        let icon = p === 'high' ? '🔴' : p === 'medium' ? '🟠' : '🟢';
+        d.innerHTML = `<span class="icon">${icon}</span> ${p.charAt(0).toUpperCase() + p.slice(1)}: <strong>${byPriority[p]}</strong>`;
+        metricsSection.appendChild(d);
+      });
+
+      // Por etapa
+      kanbanData.columns.forEach(col => {
+        const d = document.createElement('div');
+        d.className = 'metric';
+        d.innerHTML = `<span class="icon">${col.icon || '📌'}</span> ${col.name}: <strong>${byColumn[col.id]}</strong>`;
+        metricsSection.appendChild(d);
+      });
+    }
+
+    // Eventos
+
+    // Adicionar nova etapa
+    addColumnBtn.addEventListener('click', () => {
+      const newColumn = {
+        id: generateId(),
+        name: 'Nova Etapa',
+        color: '#2196F3',
+        icon: '📌'
+      };
+      kanbanData.columns.push(newColumn);
       saveData();
-      updateStatusOptions();
-      renderColumns();
-      renderMetrics();
-    }
-  });
+      updateStatusSelectOptions();
+      renderKanban();
+    });
 
-  // Modal editar tarefa
-  const modal = document.getElementById('edit-task-modal');
-  const editForm = document.getElementById('edit-task-form');
-  let currentEditTaskId = null;
+    // Form adicionar tarefa externo
+    newTaskForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const title = newTaskTitle.value.trim();
+      if (!title) return alert('Título é obrigatório.');
 
-  function openEditModal(taskId) {
-    currentEditTaskId = taskId;
-    const task = tasks.find(t => t.id === taskId);
-    if(!task) return;
+      const newTask = {
+        id: generateId(),
+        title,
+        priority: newTaskPriority.value,
+        responsible: newTaskResponsible.value.trim(),
+        status: newTaskStatus.value
+      };
+      kanbanData.tasks.push(newTask);
+      saveData();
+      renderKanban();
+      newTaskForm.reset();
+      updateStatusSelectOptions();
+    });
 
-    document.getElementById('edit-task-title').value = task.title;
-    document.getElementById('edit-task-priority').value = task.priority;
-    document.getElementById('edit-task-responsible').value = task.responsible;
-    document.getElementById('edit-task-status').value = task.status;
+    // Filtrar dinamicamente
+    [filterTitle, filterPriority, filterResponsible].forEach(el => {
+      el.addEventListener('input', renderKanban);
+    });
 
-    modal.classList.add('active');
-  }
+    // Modal editar tarefa
+    editTaskForm.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!editingTaskId) return;
 
-  document.getElementById('cancel-edit-task').addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
+      const task = kanbanData.tasks.find(t => t.id === editingTaskId);
+      if (!task) return;
 
-  editForm.addEventListener('submit', e => {
-    e.preventDefault();
-    if(currentEditTaskId === null) return;
+      task.title = editTaskTitleInput.value.trim();
+      task.priority = editTaskPriorityInput.value;
+      task.responsible = editTaskResponsibleInput.value.trim();
 
-    const task = tasks.find(t => t.id === currentEditTaskId);
-    if(!task) return;
+      saveData();
+      renderKanban();
+      closeEditTaskModal();
+    });
+    editTaskCancelBtn.addEventListener('click', closeEditTaskModal);
 
-    const title = document.getElementById('edit-task-title').value.trim();
-    if(!title) {
-      alert('Título é obrigatório');
-      return;
-    }
-    task.title = title;
-    task.priority = document.getElementById('edit-task-priority').value;
-    task.responsible = document.getElementById('edit-task-responsible').value.trim();
-    task.status = document.getElementById('edit-task-status').value;
+    // Modal editar coluna
+    editColumnForm.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!editingColumnId) return;
 
-    saveData();
-    renderColumns();
-    renderMetrics();
-    modal.classList.remove('active');
-  });
+      const col = kanbanData.columns.find(c => c.id === editingColumnId);
+      if (!col) return;
 
-  // Filtros
-  document.getElementById('filter-title').addEventListener('input', renderColumns);
-  document.getElementById('filter-priority').addEventListener('change', renderColumns);
-  document.getElementById('filter-responsible').addEventListener('input', renderColumns);
+      col.name = editColumnNameInput.value.trim();
+      col.color = editColumnColorInput.value;
+      col.icon = editColumnIconInput.value.trim();
 
-  // Inicialização
-  loadData();
-  updateStatusOptions();
-  renderColumns();
-  renderMetrics();
+      saveData();
+      updateStatusSelectOptions();
+      renderKanban();
+      closeEditColumnModal();
+    });
+    editColumnCancelBtn.addEventListener('click', closeEditColumnModal);
 
-</script>
+    // Inicialização
+    loadData();
+    updateStatusSelectOptions();
+    renderKanban();
+
+  </script>
+
 </body>
 </html>
