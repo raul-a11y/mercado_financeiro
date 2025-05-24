@@ -26,6 +26,9 @@
         <li><a href="#" class="block p-2 rounded hover:bg-gray-200">Alertas</a></li>
       </ul>
     </nav>
+    <button onclick="exportTasks()" class="mt-4 bg-green-500 text-white px-4 py-2 rounded">Exportar JSON</button>
+    <input type="file" id="importFile" class="hidden" onchange="importTasks(event)">
+    <button onclick="document.getElementById('importFile').click()" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">Importar JSON</button>
   </aside>
 
   <!-- Main -->
@@ -50,6 +53,11 @@
         <h3 class="font-semibold text-lg mb-2">Concluído</h3>
         <ul id="done" class="space-y-2 min-h-[100px]" ondrop="drop(event)" ondragover="allowDrop(event)"></ul>
       </div>
+    </div>
+
+    <div class="mt-8">
+      <h3 class="text-xl font-bold mb-2">📊 Métricas</h3>
+      <div id="metrics" class="text-gray-700"></div>
     </div>
 
     <!-- Modal -->
@@ -101,6 +109,7 @@
       const task = document.getElementById(data);
       ev.currentTarget.appendChild(task);
       saveBoard();
+      updateMetrics();
     }
 
     function addTask() {
@@ -111,6 +120,7 @@
       document.getElementById('todo').appendChild(task);
       input.value = '';
       saveBoard();
+      updateMetrics();
     }
 
     function createTaskElement(data) {
@@ -168,6 +178,7 @@
       `;
       closeModal();
       saveBoard();
+      updateMetrics();
     }
 
     function saveBoard() {
@@ -202,7 +213,63 @@
       });
     }
 
-    window.onload = loadBoard;
+    function updateMetrics() {
+      const columns = ['todo', 'in-progress', 'done'];
+      const counts = {};
+
+      columns.forEach(col => {
+        counts[col] = document.getElementById(col).children.length;
+      });
+
+      document.getElementById('metrics').innerText = `
+        A Fazer: ${counts.todo} | Em Progresso: ${counts['in-progress']} | Concluído: ${counts.done}
+      `;
+    }
+
+    function exportTasks() {
+      const data = localStorage.getItem('kanbanBoard');
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kanban_export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importTasks(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        localStorage.setItem('kanbanBoard', e.target.result);
+        loadBoard();
+        updateMetrics();
+      };
+      reader.readAsText(file);
+    }
+
+    function checkDeadlines() {
+      const now = new Date().toISOString().split("T")[0];
+      ['todo', 'in-progress'].forEach(col => {
+        document.getElementById(col).querySelectorAll('li').forEach(task => {
+          const data = JSON.parse(task.dataset.info);
+          if (data.deadline && data.deadline < now) {
+            task.classList.add('bg-red-200');
+          } else {
+            task.classList.remove('bg-red-200');
+          }
+        });
+      });
+    }
+
+    window.onload = () => {
+      loadBoard();
+      updateMetrics();
+      checkDeadlines();
+      setInterval(checkDeadlines, 60 * 1000);
+    };
   </script>
 </body>
 </html>
