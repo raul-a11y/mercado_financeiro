@@ -9,18 +9,12 @@
     .dragging {
       opacity: 0.5;
     }
-    .status-menu {
-      position: absolute;
-      background: white;
-      border: 1px solid #ddd;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      z-index: 50;
+    .modal-bg {
+      background: rgba(0, 0, 0, 0.5);
     }
   </style>
 </head>
-<body class="flex h-screen bg-gray-100" onclick="hideStatusMenu(event)">
+<body class="flex h-screen bg-gray-100">
   <!-- Sidebar -->
   <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
     <h1 class="text-2xl font-bold mb-6">FinancePro</h1>
@@ -38,7 +32,7 @@
   <main class="flex-1 p-6 overflow-auto relative">
     <h2 class="text-2xl font-semibold mb-4">Kanban - Tarefas do Mercado</h2>
     <div class="mb-4 flex gap-2">
-      <input id="new-task" type="text" placeholder="Nova tarefa..." class="flex-1 p-2 border rounded" />
+      <input id="new-task" type="text" placeholder="Título da nova tarefa..." class="flex-1 p-2 border rounded" />
       <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded">Adicionar</button>
     </div>
 
@@ -58,12 +52,40 @@
       </div>
     </div>
 
-    <div id="statusMenu" class="status-menu hidden"></div>
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 hidden modal-bg flex justify-center items-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-md w-96">
+        <h3 class="text-xl font-bold mb-4">Editar Tarefa</h3>
+        <label class="block mb-2">Título
+          <input id="modal-title" class="w-full border p-2 rounded" />
+        </label>
+        <label class="block mb-2">Descrição
+          <textarea id="modal-desc" class="w-full border p-2 rounded"></textarea>
+        </label>
+        <label class="block mb-2">Prioridade
+          <select id="modal-priority" class="w-full border p-2 rounded">
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+          </select>
+        </label>
+        <label class="block mb-2">Prazo
+          <input type="date" id="modal-deadline" class="w-full border p-2 rounded" />
+        </label>
+        <label class="block mb-2">Responsável
+          <input id="modal-responsible" class="w-full border p-2 rounded" />
+        </label>
+        <div class="flex justify-end gap-2 mt-4">
+          <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
+          <button onclick="saveTaskChanges()" class="px-4 py-2 bg-blue-500 text-white rounded">Salvar</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
     let taskId = 0;
-    let selectedTask = null;
+    let editingTask = null;
 
     function allowDrop(ev) {
       ev.preventDefault();
@@ -83,121 +105,38 @@
 
     function addTask() {
       const input = document.getElementById('new-task');
-      const value = input.value.trim();
-      if (!value) return;
-
-      const task = createTaskElement(value);
+      const title = input.value.trim();
+      if (!title) return;
+      const task = createTaskElement({ id: 'task-' + taskId++, title, desc: '', priority: 'Média', deadline: '', responsible: '' });
       document.getElementById('todo').appendChild(task);
       input.value = '';
       saveBoard();
     }
 
-    function createTaskElement(text, id = null) {
+    function createTaskElement(data) {
       const li = document.createElement('li');
-      const taskIdString = id || 'task-' + taskId++;
-      li.id = taskIdString;
+      li.id = data.id;
       li.draggable = true;
       li.ondragstart = drag;
-      li.className = 'p-2 bg-gray-100 rounded cursor-pointer flex justify-between items-center';
+      li.className = 'p-2 bg-gray-100 rounded cursor-pointer';
+      li.dataset.info = JSON.stringify(data);
 
-      const span = document.createElement('span');
-      span.textContent = text;
-      span.className = 'flex-1';
+      li.innerHTML = `
+        <div class="font-semibold">${data.title}</div>
+        <div class="text-sm text-gray-600">${data.priority} ${data.deadline ? ' - ' + data.deadline : ''}</div>
+        <div class="text-xs text-gray-500">${data.responsible || ''}</div>
+      `;
 
-      span.onclick = (e) => openStatusMenu(li, e);
-
-      const actions = document.createElement('div');
-      actions.className = 'flex gap-2 ml-2';
-
-      const editBtn = document.createElement('button');
-      editBtn.textContent = '✏️';
-      editBtn.onclick = () => {
-        const newText = prompt('Editar tarefa:', span.textContent);
-        if (newText !== null) {
-          span.textContent = newText;
-          saveBoard();
-        }
-      };
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = '❌';
-      delBtn.onclick = () => {
-        li.remove();
-        saveBoard();
-      };
-
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
-      li.appendChild(span);
-      li.appendChild(actions);
+      li.onclick = () => openModal(li);
 
       return li;
     }
 
-    function openStatusMenu(task, event) {
-      event.stopPropagation();
-      selectedTask = task;
-      const menu = document.getElementById('statusMenu');
-      menu.innerHTML = `
-        <p class='mb-2 font-semibold'>Mover para:</p>
-        <button onclick="moveTask('todo')" class="block w-full text-left hover:bg-gray-200 p-1 rounded">A Fazer</button>
-        <button onclick="moveTask('in-progress')" class="block w-full text-left hover:bg-gray-200 p-1 rounded">Em Progresso</button>
-        <button onclick="moveTask('done')" class="block w-full text-left hover:bg-gray-200 p-1 rounded">Concluído</button>
-      `;
-      menu.style.top = event.clientY + 'px';
-      menu.style.left = event.clientX + 'px';
-      menu.classList.remove('hidden');
-    }
+    function openModal(task) {
+      editingTask = task;
+      const data = JSON.parse(task.dataset.info);
 
-    function hideStatusMenu(e) {
-      const menu = document.getElementById('statusMenu');
-      if (!menu.contains(e.target)) {
-        menu.classList.add('hidden');
-      }
-    }
-
-    function moveTask(status) {
-      if (!selectedTask) return;
-      document.getElementById(status).appendChild(selectedTask);
-      document.getElementById('statusMenu').classList.add('hidden');
-      selectedTask = null;
-      saveBoard();
-    }
-
-    function saveBoard() {
-      const columns = ['todo', 'in-progress', 'done'];
-      const data = {};
-
-      columns.forEach(col => {
-        const ul = document.getElementById(col);
-        const tasks = [];
-        ul.querySelectorAll('li').forEach(task => {
-          const text = task.querySelector('span').textContent;
-          tasks.push({ id: task.id, text });
-        });
-        data[col] = tasks;
-      });
-
-      localStorage.setItem('kanbanBoard', JSON.stringify(data));
-    }
-
-    function loadBoard() {
-      const saved = localStorage.getItem('kanbanBoard');
-      if (!saved) return;
-      const data = JSON.parse(saved);
-      const columns = ['todo', 'in-progress', 'done'];
-
-      columns.forEach(col => {
-        const ul = document.getElementById(col);
-        ul.innerHTML = '';
-        data[col].forEach(taskData => {
-          const task = createTaskElement(taskData.text, taskData.id);
-          ul.appendChild(task);
-        });
-      });
-    }
-
-    window.onload = loadBoard;
-  </script>
-</body>
-</html>
+      document.getElementById('modal-title').value = data.title;
+      document.getElementById('modal-desc').value = data.desc;
+      document.getElementById('modal-priority').value = data.priority;
+      document.getElem
